@@ -1,0 +1,25 @@
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  min-height: 100%;
+  background: #050505;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+/* Debe ser transparente: si no, tapa por completo el degradado y el grano del body / #root
+   definidos en App.css (por eso “se veía igual”). */
+#root {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+}

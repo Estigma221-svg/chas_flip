@@ -1,0 +1,49 @@
+CHASFLIP — texto plano cara de moneda 3D (Three.js / cilindro)
+================================================================
+
+ARCHIVO Y RUTA
+--------------
+Nombre fijo que busca la app:
+  public/chasflip-coin-face.png
+
+También válido mismo nombre en JPG:
+  public/chasflip-coin-face.jpg   (opcional — si cambias extensión, hay que cambiar URL en Bitcoin3D.jsx)
+
+
+FORMATO RECOMENDADO
+------------------
+• PNG — preferido (nitidez, sin compresión con artefactos en el metal).
+• JPG — aceptable si es alta calidad (calidad ≥ 85–92).
+
+
+DIMENSIONES (importante para que no “galletee” ni se vea borrosa)
+---------------------------------------------------------------
+• Ratio 1 : 1 (cuadrado obligatorio para mapeado limpio en la tapa del cilindro).
+• Resolución: mínimo 1024 × 1024 px; ideal 2048 × 2048 px (arte premium / retina).
+• Usa dimensiones potencia de 2: 1024, 2048… (mejor compatibilidad GPU / mipmaps).
+
+
+CONTENIDO DEL CUADRO (cómo recortar tu render 3D)
+-------------------------------------------------
+Tu referencia viene en ángulo: para la textura necesitas como si la miraras de frente ("top-down"):
+• La moneda ocupando CASI todo el cuadrado circular: borde dorado/reborde dentro del archivo, muy poco margen exterior.
+• El diseño debe estar CENTRADO; lo importante (logo CHASFLIP + leyendas) debe quedar dentro de un círculo que toque ~90–95 % del lado del PNG (margen muy fino).
+
+La app aplica un "zoom" UV al centro del PNG (~16 %) para ocultar bordes oscuros y hacer que logo/textos ocupen más del disco visible.
+Si tras actualizar ves aún halo negro, puedes recortar menos en el PNG — o en código ajustar COIN_FACE_UV_BORDER en Bitcoin3D.jsx (más alto = más zoom = más recorte del borde).
+
+
+COLOR Y FONDO
+-------------
+• Fondo mejor SÓLIDO oscuro (#050505 ~ #121212) o transparente PNG.
+• Evita reflejos o glow enormes que salgan del disco (se vería raro al envolver el cilindro).
+
+
+SRGB
+----
+• Exporta en espacio sRGB (estándar web / diseño). La app marca la textura como sRGB en Three.js.
+
+
+SI NO PONES ARCHIVO
+-------------------
+La app sigue usando la cara generada por código (procedural) como hasta ahora.

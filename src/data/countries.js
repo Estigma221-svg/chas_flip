@@ -1,0 +1,76 @@
+// ISO 3166-1 alpha-2 — banderas vía CDN en CountryFlag
+// Lista curada con los más relevantes para la audiencia LATAM + global.
+
+export const COUNTRIES = [
+  { code: 'MX', name: 'México' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'CA', name: 'Canadá' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'BR', name: 'Brasil' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'PE', name: 'Perú' },
+  { code: 'VE', name: 'Venezuela' },
+  { code: 'UY', name: 'Uruguay' },
+  { code: 'PY', name: 'Paraguay' },
+  { code: 'BO', name: 'Bolivia' },
+  { code: 'EC', name: 'Ecuador' },
+  { code: 'CR', name: 'Costa Rica' },
+  { code: 'PA', name: 'Panamá' },
+  { code: 'GT', name: 'Guatemala' },
+  { code: 'HN', name: 'Honduras' },
+  { code: 'SV', name: 'El Salvador' },
+  { code: 'NI', name: 'Nicaragua' },
+  { code: 'CU', name: 'Cuba' },
+  { code: 'DO', name: 'República Dominicana' },
+  { code: 'PR', name: 'Puerto Rico' },
+  { code: 'ES', name: 'España' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'GB', name: 'Reino Unido' },
+  { code: 'IE', name: 'Irlanda' },
+  { code: 'FR', name: 'Francia' },
+  { code: 'DE', name: 'Alemania' },
+  { code: 'IT', name: 'Italia' },
+  { code: 'NL', name: 'Países Bajos' },
+  { code: 'BE', name: 'Bélgica' },
+  { code: 'CH', name: 'Suiza' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'SE', name: 'Suecia' },
+  { code: 'NO', name: 'Noruega' },
+  { code: 'DK', name: 'Dinamarca' },
+  { code: 'FI', name: 'Finlandia' },
+  { code: 'PL', name: 'Polonia' },
+  { code: 'GR', name: 'Grecia' },
+  { code: 'TR', name: 'Turquía' },
+  { code: 'RU', name: 'Rusia' },
+  { code: 'UA', name: 'Ucrania' },
+  { code: 'AE', name: 'Emiratos Árabes Unidos' },
+  { code: 'SA', name: 'Arabia Saudita' },
+  { code: 'IL', name: 'Israel' },
+  { code: 'IN', name: 'India' },
+  { code: 'CN', name: 'China' },
+  { code: 'JP', name: 'Japón' },
+  { code: 'KR', name: 'Corea del Sur' },
+  { code: 'TH', name: 'Tailandia' },
+  { code: 'SG', name: 'Singapur' },
+  { code: 'MY', name: 'Malasia' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'PH', name: 'Filipinas' },
+  { code: 'VN', name: 'Vietnam' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'NZ', name: 'Nueva Zelanda' },
+  { code: 'ZA', name: 'Sudáfrica' },
+  { code: 'EG', name: 'Egipto' },
+  { code: 'NG', name: 'Nigeria' },
+  { code: 'KE', name: 'Kenia' },
+  { code: 'MA', name: 'Marruecos' },
+];
+
+export const COUNTRIES_BY_CODE = COUNTRIES.reduce((acc, c) => {
+  acc[c.code] = c;
+  return acc;
+}, {});
+
+export function findCountry(code) {
+  return COUNTRIES_BY_CODE[code] || null;
+}

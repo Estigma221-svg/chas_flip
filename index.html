@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Fondo inmediato: si JS falla, no queda página blanca del navegador -->
+    <style>
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: radial-gradient(900px 600px at 0% 0%, rgba(247,147,26,0.18), transparent 55%),
+          radial-gradient(800px 500px at 100% 0%, rgba(34,234,255,0.10), transparent 50%),
+          #050508;
+        color: rgba(255, 255, 255, 0.45);
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+    </style>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHASFLIP</title>
+  </head>
+  <body>
+    <div id="root">
+      <p id="chas-boot-placeholder" style="padding: 48px 24px; text-align: center; font-size: 13px; font-weight: 500; letter-spacing: -0.01em;">
+        Empezamos…
+      </p>
+    </div>
+    <script>
+      (function () {
+        function replacePlaceholder(html) {
+          var el = document.getElementById('chas-boot-placeholder');
+          if (!el) return false;
+          el.outerHTML = html;
+          return true;
+        }
+        window.addEventListener('error', function (ev) {
+          var msg = ev && ev.message ? ev.message : 'Error';
+          replacePlaceholder(
+            '<div style="padding:48px 24px;text-align:left;max-width:560px;margin:0 auto;color:#faa;font-family:system-ui,sans-serif;font-size:13px;line-height:1.5">' +
+              '<strong>Error al cargar</strong>' +
+              '<pre style="margin-top:10px;white-space:pre-wrap;font-size:12px;opacity:.95">' +
+              msg +
+              '</pre></div>'
+          );
+        });
+        window.addEventListener(
+          'unhandledrejection',
+          function (ev) {
+            var r = ev && ev.reason;
+            var msg = r instanceof Error ? r.stack || r.message : String(r || 'Promesa rechazada');
+            if (document.getElementById('chas-boot-placeholder'))
+              replacePlaceholder(
+                '<div style="padding:48px 24px;text-align:left;max-width:560px;margin:0 auto;color:#faa;font-family:system-ui,sans-serif;font-size:13px;line-height:1.5">' +
+                  '<strong>Error (promesa rechazada)</strong>' +
+                  '<pre style="margin-top:10px;white-space:pre-wrap;font-size:12px;opacity:.95">' +
+                  msg +
+                  '</pre></div>'
+              );
+          },
+          { passive: true }
+        );
+        setTimeout(function () {
+          if (!document.getElementById('chas-boot-placeholder')) return;
+          replacePlaceholder(
+            '<div style="padding:48px 24px;text-align:center;max-width:540px;margin:0 auto;color:rgba(255,255,255,.78);font-family:system-ui,sans-serif;line-height:1.55;font-size:13px">' +
+              '<p>El JavaScript no ha terminado de cargar. Abre la consola (Safari → Desarrollo → Mostrar consola JavaScript, o ⌥⌘C) y revisa errores.</p>' +
+              '<p style="margin-top:14px;font-size:12px;opacity:.8">Si estás en <strong>npm run dev</strong> con Safari, prueba también <code style="font-size:.95em;color:rgba(170,230,255,.95)">npm run build && npm run preview</code> o otro navegador para aislar si es el servidor de desarrollo.</p>' +
+              '</div>'
+          );
+        }, 20000);
+      })();
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
