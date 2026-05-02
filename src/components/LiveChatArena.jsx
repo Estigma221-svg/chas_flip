@@ -406,7 +406,20 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
           <span className="live-chat__title-pulse" aria-hidden />
           Live chat · arena
         </div>
-        <div className="live-chat__count">{renderable.length} mensajes</div>
+        <div className="live-chat__header-right">
+          <span
+            className={`live-chat__conn ${supaConfigured ? 'live-chat__conn--live' : 'live-chat__conn--demo'}`}
+            title={
+              supaConfigured
+                ? 'Conectado a Supabase · mensajes guardados en servidor'
+                : 'Modo demo · faltan VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY en Vercel'
+            }
+          >
+            <span className="live-chat__conn-dot" aria-hidden />
+            {supaConfigured ? 'Live' : 'Demo'}
+          </span>
+          <span className="live-chat__count">{renderable.length} msj</span>
+        </div>
       </header>
 
       <div ref={listRef} className="live-chat__list" role="log" aria-live="polite">
