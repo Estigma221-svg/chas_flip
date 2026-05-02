@@ -3166,23 +3166,78 @@ button, input{
     max-height: 86vh;
     padding: 16px;
   }
-  .content-shell{ gap: 140px; }
+  .content-shell{ gap: 48px; }
+}
+
+@media (max-width: 768px){
+  .header-flex{
+    height: auto;
+    min-height: 64px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    column-gap: 8px;
+    justify-content: flex-start;
+  }
+  .header-flex > div:first-child{
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 10px !important;
+  }
+  .header-right{
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .header-right .btn-glass{
+    height: 36px;
+    padding: 0 12px;
+    font-size: 11px;
+    letter-spacing: .6px;
+    border-radius: 12px;
+  }
+  .header-right .btn-glass--icon{
+    width: 36px;
+    padding: 0;
+  }
+  .balance-card{
+    min-width: 0;
+    padding: 6px 12px;
+    margin-left: auto;
+  }
+  .balance-card small{ font-size: 8px; letter-spacing: 1.6px; }
+  .balance-card h2{ font-size: 16px; }
+  .user-chip{ padding: 4px 10px 4px 4px; gap: 6px; }
+  .user-chip__name{ display: none; }
 }
 
 @media (max-width: 600px){
-  .header-flex{ padding: 0 16px; }
-  .brand h1{ font-size: 22px; letter-spacing: 4px; }
+  .header-flex{ padding: 8px 12px; }
+  .brand h1{ font-size: 20px; letter-spacing: 3px; }
+  .blockchain-tag{ font-size: 9px; letter-spacing: 1.6px; }
   .login-box{ width: 100%; padding: 28px; }
   .login-logo{ font-size: 44px; letter-spacing: 6px; }
-  .main-body{ gap: 14px; }
+  .main-body{ gap: 14px; padding: 12px 12px 24px; }
   .game-area{
     min-height: 420px;
     height: auto;
-    max-height: 82vh;
+    max-height: none;
     padding: 14px 12px;
   }
   .chart-card{ height: 460px; }
   .xchart__canvas{ height: 360px; }
   .arena-info{ width: calc(100% - 16px); }
-  .content-shell{ gap: 120px; }
+  .content-shell{ gap: 24px; max-width: 100%; }
+  .bet-btn{ min-width: 0; flex: 1 1 calc(33.333% - 8px); padding: 10px 8px; font-size: 12px; }
+  .arena-bets-row{ gap: 8px; margin-top: 18px; }
+  .live-chat{ height: auto; min-height: 0; max-height: 70vh; }
+  .live-chat__list{ max-height: 48vh; }
+}
+
+@media (max-width: 420px){
+  .brand h1{ font-size: 18px; letter-spacing: 2px; }
+  .header-right .btn-glass{ font-size: 10px; padding: 0 10px; height: 34px; }
+  .balance-card h2{ font-size: 14px; }
+  .bet-btn{ flex: 1 1 calc(50% - 6px); }
 }
