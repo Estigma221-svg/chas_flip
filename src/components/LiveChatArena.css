@@ -113,6 +113,56 @@
   font-variant-numeric: tabular-nums;
 }
 
+.live-chat__header-right{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-chat__conn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+.live-chat__conn-dot{
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.live-chat__conn--live{
+  color: #c8ffe0;
+  background: rgba(44,255,143,0.10);
+  border-color: rgba(44,255,143,0.42);
+  text-shadow: 0 0 6px rgba(44,255,143,.55);
+}
+.live-chat__conn--live .live-chat__conn-dot{
+  background: #2cff8f;
+  box-shadow: 0 0 8px #2cff8f;
+}
+
+.live-chat__conn--demo{
+  color: #ffd9a8;
+  background: rgba(247,147,26,0.12);
+  border-color: rgba(247,147,26,0.45);
+  text-shadow: 0 0 6px rgba(247,147,26,.45);
+}
+.live-chat__conn--demo .live-chat__conn-dot{
+  background: #f7931a;
+  box-shadow: 0 0 8px #f7931a;
+}
+
 .live-chat__list{
   position: relative;
   z-index: 1;
