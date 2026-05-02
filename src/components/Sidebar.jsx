@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AvatarFace from './AvatarFace';
 import CountryFlag from './CountryFlag';
 
@@ -18,6 +19,9 @@ const montoRandom = () => {
 const POOL_INICIAL = 60158748;
 
 export default function Sidebar({ usuario }) {
+  const { t, i18n } = useTranslation();
+  const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+
   const [users, setUsers] = useState([
     { id: 1, code: 'MX', name: '@JaviStyle',  monto: 10,      gano: true  },
     { id: 2, code: 'US', name: '@CryptoKing', monto: 100,     gano: false },
@@ -47,14 +51,14 @@ export default function Sidebar({ usuario }) {
 
   return (
     <aside className="sidebar">
-      <div className="side-title">Live arena · global</div>
+      <div className="side-title">{t('sidebar.title')}</div>
 
       <div className="pool-card">
-        <p className="field-label">Pool en vivo</p>
+        <p className="field-label">{t('sidebar.pool_label')}</p>
         <p className="pool-card__value">
-          ${Math.floor(totalVivo).toLocaleString('es-MX')}
+          ${Math.floor(totalVivo).toLocaleString(numLocale)}
         </p>
-        <p className="pool-card__hint">▲ Fluyendo ahora</p>
+        <p className="pool-card__hint">{t('sidebar.pool_hint')}</p>
       </div>
 
       <div className="live-list">
@@ -69,7 +73,7 @@ export default function Sidebar({ usuario }) {
               </span>
               <span className="user-row__name">{usuario.email}</span>
             </span>
-            <span className="pill user-row__you-pill pill--you">TÚ</span>
+            <span className="pill user-row__you-pill pill--you">{t('sidebar.you_pill')}</span>
           </div>
         )}
 
@@ -82,7 +86,7 @@ export default function Sidebar({ usuario }) {
               <span className="user-row__name">{user.name}</span>
             </span>
             <span className={`pill ${user.gano ? 'pill--up' : 'pill--down'}`}>
-              {user.gano ? '+' : '-'}${user.monto.toLocaleString('es-MX')}
+              {user.gano ? '+' : '-'}${user.monto.toLocaleString(numLocale)}
             </span>
           </div>
         ))}
@@ -90,7 +94,7 @@ export default function Sidebar({ usuario }) {
 
       <div className="side-footer">
         <span className="online-dot" />
-        {conteo.toLocaleString('es-MX')} jugando ahora
+        {t('sidebar.playing_now', { count: conteo.toLocaleString(numLocale) })}
       </div>
     </aside>
   );

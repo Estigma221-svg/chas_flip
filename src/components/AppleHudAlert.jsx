@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next';
+
 export default function AppleHudAlert({
   open,
   title,
   message,
   onDismiss,
 }) {
+  const { t } = useTranslation();
+
   if (!open || !title) return null;
 
   return (
@@ -15,7 +19,7 @@ export default function AppleHudAlert({
         </p>
         {message && <p className="apple-hud-message">{message}</p>}
         <button type="button" className="apple-hud-cta" onClick={onDismiss}>
-          Aceptar
+          {t('common.accept')}
         </button>
       </div>
     </div>

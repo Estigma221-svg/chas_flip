@@ -542,6 +542,127 @@ button, input{
   opacity: .9;
 }
 
+/* ===========================
+   LANGUAGE PICKER (dropdown estilo glass, vive en .header-right)
+   =========================== */
+.lang-picker{
+  position: relative;
+}
+
+.lang-picker__btn{
+  width: auto !important;
+  padding: 0 10px !important;
+  gap: 6px;
+}
+
+.lang-picker__flag{
+  display: inline-block;
+  width: 18px;
+  height: 13px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.05);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.lang-picker__flag svg,
+.lang-picker__flag img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lang-picker__code{
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.lang-picker__list{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  min-width: 200px;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--glass-bg-strong);
+  border: var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow:
+    0 24px 48px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.04),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  animation: lang-picker-in .18s var(--ease-out);
+}
+
+@keyframes lang-picker-in{
+  from{ opacity: 0; transform: translateY(-4px); }
+  to  { opacity: 1; transform: translateY(0); }
+}
+
+.lang-picker__opt{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s var(--ease-out), color .12s var(--ease-out),
+              border-color .12s var(--ease-out);
+}
+
+.lang-picker__opt:hover{
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.lang-picker__opt.is-current{
+  background: var(--cyan-bg);
+  color: var(--text);
+  border-color: rgba(0,255,255,0.20);
+}
+
+.lang-picker__opt-flag{
+  width: 22px;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: rgba(255,255,255,0.05);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.lang-picker__opt-flag svg,
+.lang-picker__opt-flag img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lang-picker__opt-label{
+  flex: 1;
+}
+
+.lang-picker__opt-code{
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: var(--muted-2);
+  font-weight: 800;
+}
+
 .balance-card{
   min-width: 170px;
   padding: 8px 14px;

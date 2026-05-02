@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * Overlay estilo iOS/App Store durante cola Supabase · comisión servidor.
  */
 
-function formatUsd(n) {
-  return `$${Number(n).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
+function formatUsd(n, locale) {
+  return `$${Number(n).toLocaleString(locale, { maximumFractionDigits: 0 })}`;
 }
 
 function percentFromDecimal(dec) {
@@ -20,10 +22,27 @@ export default function MatchmakingSheet({
   serverCommissionDecimal,
   onCancelQueue,
 }) {
+  const { t, i18n } = useTranslation();
+
   if (!open) return null;
 
+  const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
   const pct = percentFromDecimal(serverCommissionDecimal);
   const showFee = pct !== '';
+
+  const title =
+    phase === 'searching'
+      ? t('matchmaking.title_searching')
+      : phase === 'queued'
+        ? t('matchmaking.title_queued')
+        : t('matchmaking.title_paired');
+
+  const body =
+    phase === 'searching'
+      ? t('matchmaking.body_searching')
+      : phase === 'queued'
+        ? t('matchmaking.body_queued', { stake: formatUsd(stakeAmount, numLocale) })
+        : t('matchmaking.body_paired');
 
   return (
     <div className="match-sheet-root">
@@ -39,25 +58,17 @@ export default function MatchmakingSheet({
         <div className="match-sheet-grabber" />
 
         <h2 id="match-sheet-title" className="match-sheet-title">
-          {phase === 'searching'
-            ? 'Buscando oponente'
-            : phase === 'queued'
-              ? 'En sala de espera'
-              : 'Emparejado'}
+          {title}
         </h2>
 
         <p id="match-sheet-desc" className="match-sheet-body">
-          {phase === 'searching'
-            ? 'Estamos encontrando jugadores con tu mismo nivel en la mesa escrow · la comisión oficial se firma desde el servidor de Supabase y no desde tu navegador.'
-            : phase === 'queued'
-              ? `Estás en la cola con mesa ${formatUsd(stakeAmount)}. Mantén la app abierta: el emparejamiento es casi instantáneo entre dos jugadores reales cuando ambos están en línea en el mismo nivel.`
-              : 'Hay un jugador válido contra ti. Preparando la moneda verificable…'}
+          {body}
         </p>
 
         {showFee && (
           <div className="match-sheet-pill-row">
             <span className="match-sheet-pill">
-              Comisión de mesa · {pct}% <span className="match-sheet-pill-lock">🔒 servidor</span>
+              {t('matchmaking.fee_chip', { pct })}
             </span>
           </div>
         )}
@@ -66,11 +77,11 @@ export default function MatchmakingSheet({
           <div className="match-sheet-actions">
             {phase === 'queued' && (
               <button type="button" className="match-sheet-btn match-sheet-btn--ghost" onClick={onCancelQueue}>
-                Cancelar y salir de la cola
+                {t('matchmaking.cancel_cta')}
               </button>
             )}
             {phase === 'searching' && (
-              <p className="match-sheet-muted">Calculando nivel de confianza on-chain...</p>
+              <p className="match-sheet-muted">{t('matchmaking.calculating')}</p>
             )}
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AvatarFace from './AvatarFace';
 import CountryFlag from './CountryFlag';
 import Bitcoin3D from './Bitcoin3D.jsx';
@@ -69,6 +70,8 @@ export default function Arena({
   liveMatchRow,
   onSeguirJugando,
 }) {
+  const { t, i18n } = useTranslation();
+  const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
   const [infoOpen, setInfoOpen] = useState(false);
   const [localRival, setLocalRival] = useState(null);
   const chain = getTargetChain();
@@ -118,16 +121,18 @@ export default function Arena({
     >
       {liveMatchRow && (
         <div className="arena-sync-strip" role="status" aria-live="polite">
-          <span className="arena-sync-strip__pulse" title="Canal en vivo" />
+          <span className="arena-sync-strip__pulse" />
           <span className="arena-sync-strip__meta">
-            Mesa ${Number(liveMatchRow.stake_amount ?? 0).toLocaleString('es-MX')} · comisión{' '}
-            {pctFromCommissionDec(liveMatchRow.commission_decimal)}
+            {t('arena.live_strip_meta', {
+              stake: Number(liveMatchRow.stake_amount ?? 0).toLocaleString(numLocale),
+              pct: pctFromCommissionDec(liveMatchRow.commission_decimal),
+            })}
           </span>
           <span className="arena-sync-strip__divider">·</span>
           {liveMatchRow.status === 'completed' ? (
-            <span className="arena-sync-strip__done">Mesa cerrada</span>
+            <span className="arena-sync-strip__done">{t('arena.live_strip_done')}</span>
           ) : (
-            <span className="arena-sync-strip__meta">Conectado · partida en vivo</span>
+            <span className="arena-sync-strip__meta">{t('arena.live_strip_meta_live')}</span>
           )}
         </div>
       )}
@@ -142,32 +147,34 @@ export default function Arena({
           {resultado === 'gano' ? (
             <>
               <div className="arena-outcome-banner__main">
-                <span className="arena-outcome-banner__title">¡Ganaste esta ronda!</span>
+                <span className="arena-outcome-banner__title">{t('arena.win_title')}</span>
                 {ultimaGanancia != null ? (
                   <span className="arena-outcome-banner__amt">
-                    +${ultimaGanancia.toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+                    +${ultimaGanancia.toLocaleString(numLocale, { maximumFractionDigits: 2 })}
                   </span>
                 ) : (
-                  <span className="arena-outcome-banner__amt">¡Bien jugado!</span>
+                  <span className="arena-outcome-banner__amt">{t('arena.win_amount_default')}</span>
                 )}
               </div>
               <p className="arena-outcome-banner__hint">
                 {rival
-                  ? `Tu cuenta y tu bandera son las de «Tú» abajo — ${rival.nombre} fue solo tu contrincante en esta ronda.`
-                  : 'Tu cuenta va con la etiqueta «Tú» debajo.'}
+                  ? t('arena.win_hint_with_rival', { rival: rival.nombre })
+                  : t('arena.win_hint_no_rival')}
               </p>
             </>
           ) : (
             <>
               <div className="arena-outcome-banner__main">
-                <span className="arena-outcome-banner__title">Esta vez no fue</span>
+                <span className="arena-outcome-banner__title">{t('arena.lose_title')}</span>
                 {rival ? (
-                  <span className="arena-outcome-banner__vs">Te ganó {rival.nombre}</span>
+                  <span className="arena-outcome-banner__vs">
+                    {t('arena.lose_with_rival', { rival: rival.nombre })}
+                  </span>
                 ) : (
-                  <span className="arena-outcome-banner__vs">Sigue cuando quieras</span>
+                  <span className="arena-outcome-banner__vs">{t('arena.lose_no_rival')}</span>
                 )}
               </div>
-              <p className="arena-outcome-banner__hint">Aquí mismo eliges otro monto cuando estés listo.</p>
+              <p className="arena-outcome-banner__hint">{t('arena.lose_hint')}</p>
             </>
           )}
         </div>
@@ -186,11 +193,11 @@ export default function Arena({
                 </span>
               )}
               <span className="arena-player__name">
-                {tieneDeposito ? usuario?.email : 'Sin saldo'}
+                {tieneDeposito ? usuario?.email : t('arena.no_balance')}
               </span>
             </div>
             {fase === 'resultado' && tieneDeposito && (
-              <span className="arena-role-pill arena-role-pill--you">Tú</span>
+              <span className="arena-role-pill arena-role-pill--you">{t('arena.you')}</span>
             )}
           </div>
         </div>
@@ -204,15 +211,15 @@ export default function Arena({
           {fase === 'buscando' && (
             <p className={`arena-coin-msg arena-coin-msg--search${useServerMatchmaking ? ' arena-coin-msg--live' : ''}`}>
               {useServerMatchmaking
-                ? 'Buscando rival en cola en vivo…'
-                : 'Buscando rival...'}
+                ? t('arena.searching_live')
+                : t('arena.searching_local')}
             </p>
           )}
           {fase === 'jugando' && (
             <p className={`arena-coin-msg arena-coin-msg--busy${useServerMatchmaking ? ' arena-coin-msg--live' : ''}`}>
               {useServerMatchmaking
-                ? 'Cayendo la moneda — el servidor decide esta ronda con reglas públicas.'
-                : 'Cayendo la moneda…'}
+                ? t('arena.playing_live')
+                : t('arena.playing_local')}
             </p>
           )}
         </div>
@@ -228,10 +235,10 @@ export default function Arena({
             >
               <span className="arena-rival-empty__label">
                 {fase === 'buscando'
-                  ? 'Buscando rival'
+                  ? t('arena.rival_searching_label')
                   : tieneDeposito
-                    ? 'Elige una apuesta'
-                    : 'Deposita para jugar'}
+                    ? t('arena.rival_idle_label')
+                    : t('arena.rival_idle_label_locked')}
               </span>
             </div>
           )}
@@ -248,8 +255,8 @@ export default function Arena({
                   : fase === 'buscando'
                     ? '…'
                     : tieneDeposito
-                      ? 'Pulsa $10 / $100…'
-                      : 'Sin contrincante aún'}
+                      ? t('arena.rival_idle_name')
+                      : t('arena.rival_locked_name')}
               </span>
             </div>
             {jugando && rival && fase === 'resultado' && (
@@ -262,7 +269,7 @@ export default function Arena({
                       : 'arena-role-pill arena-role-pill--opp'
                 }
               >
-                {resultado === 'perdio' ? 'Ganó esta vez' : 'Contrincante'}
+                {resultado === 'perdio' ? t('arena.opponent_won') : t('arena.opponent_label_default')}
               </span>
             )}
           </div>
@@ -272,10 +279,10 @@ export default function Arena({
       {fase === 'resultado' && typeof onSeguirJugando === 'function' && (
         <div className="arena-continue-banner" role="status">
           <button type="button" className="arena-continue-banner__cta" onClick={onSeguirJugando}>
-            Seguir jugando
+            {t('arena.continue_cta')}
           </button>
           <p className="arena-continue-banner__note">
-            Abajo tienes opcional cómo copiar el código de la partida · si esperas unos segundos también cierra solo.
+            {t('arena.continue_note')}
           </p>
         </div>
       )}
@@ -290,13 +297,16 @@ export default function Arena({
 
       {useServerMatchmaking && (
         <p className="arena-server-caption">
-          El tanto por ciento lo fija el servidor del juego, no algo inventado aquí en el navegador.
+          {t('arena.server_caption_live')}
         </p>
       )}
 
       {!useServerMatchmaking && (
         <p className="arena-server-caption arena-server-caption--muted">
-          Modo práctica: ejemplo de tasas (~{pctLabelForStake(10)} en mesas pequeñas, ~{pctLabelForStake(100)} en otras).
+          {t('arena.server_caption_demo', {
+            small: pctLabelForStake(10),
+            big: pctLabelForStake(100),
+          })}
         </p>
       )}
 
@@ -325,7 +335,7 @@ export default function Arena({
 
       {!tieneDeposito && (
         <p className="arena-deposit-hint">
-          ⚡ Deposita mínimo $10 para entrar a la arena
+          {t('arena.deposit_hint')}
         </p>
       )}
 
@@ -335,31 +345,26 @@ export default function Arena({
           className="arena-info__toggle"
           onClick={() => setInfoOpen((v) => !v)}
         >
-          <span>Cómo funciona ChasFlip</span>
+          <span>{t('arena.info_toggle')}</span>
           <span className="arena-info__chev">{infoOpen ? '▾' : '▸'}</span>
         </button>
 
         <div className="arena-info__body" aria-hidden={!infoOpen}>
+          <p
+            className="arena-info__text"
+            dangerouslySetInnerHTML={{ __html: t('arena.info_p1_html') }}
+          />
           <p className="arena-info__text">
-            ChasFlip opera con un <span className="arena-info__accent">smart pool dinámico</span> integrado con{' '}
-            <strong>Supabase</strong>: el pool en vivo concentra la actividad de las mesas y mantiene los saldos y
-            movimientos <strong>coherentes y centralizados</strong> para todos los jugadores.
-          </p>
-          <p className="arena-info__text">
-            Cada vez que juegas una ronda, el motor del juego apunta a un resultado <strong>rápido en la experiencia</strong>{' '}
-            y <strong>verificable después</strong>—queda como un{' '}
-            <span className="arena-info__accent">ticket</span> que puedes copiar: nadie desde esta pantalla puede alterar
-            quién ganó una vez hecha la apuesta. Con billetera conectada, en la{' '}
+            <span dangerouslySetInnerHTML={{ __html: t('arena.info_p2_pre_link') }} />
             <a href={chain.blockExplorerUrl} target="_blank" rel="noopener noreferrer" className="arena-info__link">
-              cadena oficial
-            </a>{' '}
-            ves la misma información pública que el resto.
+              {t('arena.info_p2_link_label')}
+            </a>
+            <span dangerouslySetInnerHTML={{ __html: t('arena.info_p2_post_link') }} />
           </p>
-          <p className="arena-info__text">
-            ¿Y <span className="arena-info__accent-vrf">“VRF”</span>? En cripto es la forma habitual de obtener azar{' '}
-            <strong>revisable por terceros</strong>. Si no te interesa el detalle: la idea es{' '}
-            <strong>honestidad con prueba</strong>, no tecnología en tu contra.
-          </p>
+          <p
+            className="arena-info__text"
+            dangerouslySetInnerHTML={{ __html: t('arena.info_p3_html') }}
+          />
         </div>
       </div>
     </section>

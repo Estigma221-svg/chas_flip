@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import GlassSelect from './GlassSelect';
 import AvatarFace from './AvatarFace';
 import { CHASFLIP_AVATAR_URLS } from '../data/chasflipAvatars.js';
@@ -12,6 +13,7 @@ const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({
 }));
 
 export default function Login({ onEntrar }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [avatarIndex, setAvatarIndex] = useState(null);
   const [paisCode, setPaisCode] = useState('MX');
@@ -23,12 +25,12 @@ export default function Login({ onEntrar }) {
 
   const handleEntrar = () => {
     const missing = [];
-    if (!emailOk) missing.push('un correo válido (ej. tu@chas.com)');
-    if (!paisOk) missing.push('tu país');
-    if (!avatarOk) missing.push('un avatar');
+    if (!emailOk) missing.push(t('login.missing_email'));
+    if (!paisOk) missing.push(t('login.missing_country'));
+    if (!avatarOk) missing.push(t('login.missing_avatar'));
 
     if (missing.length > 0) {
-      setError(`Falta: ${missing.join(', ')}.`);
+      setError(t('login.missing_prefix', { items: missing.join(', ') }));
       return;
     }
 
@@ -55,16 +57,16 @@ export default function Login({ onEntrar }) {
         <h1 className="login-logo">
           <span className="gold-text">CHAS</span>FLIP
         </h1>
-        <p className="login-sub">Blockchain · Bitcoin Native · Live</p>
+        <p className="login-sub">{t('login.tagline')}</p>
       </div>
 
       <div className="login-box">
         <div>
-          <p className="field-label">Correo</p>
+          <p className="field-label">{t('login.email_label')}</p>
           <input
             className="input-glass"
             type="email"
-            placeholder="tu@correo.com"
+            placeholder={t('login.email_placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -73,17 +75,17 @@ export default function Login({ onEntrar }) {
         </div>
 
         <div>
-          <p className="field-label">País</p>
+          <p className="field-label">{t('login.country_label')}</p>
           <GlassSelect
             value={paisCode}
             onChange={setPaisCode}
             options={COUNTRY_OPTIONS}
-            placeholder="Elige tu país…"
+            placeholder={t('login.country_placeholder')}
           />
         </div>
 
         <div>
-          <p className="field-label field-label--tight-gap">Elige tu avatar</p>
+          <p className="field-label field-label--tight-gap">{t('login.avatar_label')}</p>
           <div className="avatar-grid">
             {CHASFLIP_AVATAR_URLS.map((src, i) => (
               <div
@@ -91,7 +93,7 @@ export default function Login({ onEntrar }) {
                 role="button"
                 tabIndex={0}
                 aria-pressed={avatarIndex === i}
-                aria-label={`Avatar ${i + 1}`}
+                aria-label={t('login.avatar_aria', { n: i + 1 })}
                 className={`avatar-option ${avatarIndex === i ? 'selected' : ''}`}
                 onClick={() => setAvatarIndex(i)}
                 onKeyDown={(e) => {
@@ -114,7 +116,7 @@ export default function Login({ onEntrar }) {
         )}
 
         <button className="btn-cta" onClick={handleEntrar}>
-          Entrar a la arena
+          {t('login.cta')}
         </button>
       </div>
     </div>
