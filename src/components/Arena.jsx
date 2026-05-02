@@ -227,7 +227,11 @@ export default function Arena({
               className={`arena-rival-empty ${fase === 'buscando' ? 'is-searching' : ''}`}
             >
               <span className="arena-rival-empty__label">
-                {fase === 'buscando' ? 'Buscando rival' : 'Esperando'}
+                {fase === 'buscando'
+                  ? 'Buscando rival'
+                  : tieneDeposito
+                    ? 'Elige una apuesta'
+                    : 'Deposita para jugar'}
               </span>
             </div>
           )}
@@ -243,7 +247,9 @@ export default function Arena({
                   ? rival.nombre
                   : fase === 'buscando'
                     ? '…'
-                    : 'Rival'}
+                    : tieneDeposito
+                      ? 'Pulsa $10 / $100…'
+                      : 'Sin contrincante aún'}
               </span>
             </div>
             {jugando && rival && fase === 'resultado' && (

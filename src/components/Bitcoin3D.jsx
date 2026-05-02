@@ -319,12 +319,15 @@ function buildCoinMaterials(customFaceMap) {
   return [sideMat, frontMat, backMat];
 }
 
+// La moneda solo se anima si `girando` es true (jugando/buscando). En idle se
+// queda completamente quieta para evitar que el usuario crea que la partida
+// arrancó sola.
 function FallbackCoinMesh({ girando }) {
   const meshRef = useRef();
   useFrame((_, delta) => {
     if (!meshRef.current) return;
-    const v = girando ? 14 : 0.6;
-    meshRef.current.rotation.y += delta * v;
+    if (!girando) return;
+    meshRef.current.rotation.y += delta * 14;
   });
   return (
     <group ref={meshRef}>
@@ -387,8 +390,8 @@ function Coin({ girando }) {
   useFrame((_, delta) => {
     const target = groupRef.current || null;
     if (!target) return;
-    const v = girando ? 14 : 0.6;
-    target.rotation.y += delta * v;
+    if (!girando) return;
+    target.rotation.y += delta * 14;
   });
 
   if (!materials) return <FallbackCoinMesh girando={girando} />;
@@ -448,9 +451,13 @@ export default function Bitcoin3D({ fase }) {
         </Suspense>
 
         <PresentationControls global config={{ mass: 2, tension: 500 }} snap>
-          <Float speed={1.4} rotationIntensity={0.2} floatIntensity={0.35}>
+          {estaGirando ? (
+            <Float speed={1.4} rotationIntensity={0.2} floatIntensity={0.35}>
+              <Coin girando={estaGirando} />
+            </Float>
+          ) : (
             <Coin girando={estaGirando} />
-          </Float>
+          )}
         </PresentationControls>
 
         <ContactShadows
