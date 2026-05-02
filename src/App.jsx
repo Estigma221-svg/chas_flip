@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './App.css';
 import Login from './components/Login';
 import Arena from './components/Arena.jsx';
@@ -57,6 +58,8 @@ function readSession() {
 }
 
 function App() {
+  const { t, i18n } = useTranslation();
+  const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
   const [usuario, setUsuario] = useState(() => readSession());
   const [saldo, setSaldo] = useState(0);
   const [fase, setFase] = useState('idle');
@@ -405,9 +408,8 @@ function App() {
             getSupabaseBrowserClient();
           } catch {
             setAppleHud({
-              title: 'Crea tu proyecto Supabase',
-              message:
-                'Copia `.env.example` → `.env.local` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Ejecuta el SQL en `supabase/migrations/` en el Editor SQL.',
+              title: t('hud.supabase_failed_title'),
+              message: t('hud.supabase_failed_msg'),
             });
 
             return;
@@ -416,21 +418,18 @@ function App() {
           const e = /** @type {{ code?: string, message?: string }} */ (rawErr || {});
           if (e.code === 'profile_upsert_failed') {
             setAppleHud({
-              title: 'No pudimos escribir tu perfil',
-              message:
-                `Revisa que la tabla 'profiles' exista con sus policies (RLS). Detalle: ${e.message || 'desconocido'}`,
+              title: t('hud.profile_failed_title'),
+              message: `${t('hud.profile_failed_msg')} (${e.message || ''})`,
             });
           } else if (e.code === 'anon_disabled') {
             setAppleHud({
-              title: 'Inicio de sesión anónimo requerido',
-              message:
-                'En Dashboard → Authentication → Providers activa Anonymous sign-ins. Así cada visita obtiene UID para matching sin email.',
+              title: t('hud.anon_disabled_title'),
+              message: t('hud.anon_disabled_msg'),
             });
           } else {
             setAppleHud({
-              title: 'Conexión con Supabase falló',
-              message:
-                `Inicializar la sesión devolvió un error inesperado. Detalle: ${e.message || 'desconocido'}`,
+              title: t('hud.supabase_failed_title'),
+              message: `${t('hud.supabase_failed_msg')} (${e.message || ''})`,
             });
           }
           return;
@@ -580,8 +579,8 @@ function App() {
   const jugar = (monto) => {
     if (saldo < monto) {
       setAppleHud({
-        title: 'Saldo insuficiente',
-        message: 'Deposita saldo práctico desde la cabecera.',
+        title: t('hud.insufficient_title'),
+        message: t('hud.insufficient_msg'),
       });
 
       return;
@@ -594,8 +593,8 @@ function App() {
     const comLocal = getLocalCommissionDecimal(monto);
     if (comLocal == null) {
       setAppleHud({
-        title: 'Mesa no válida',
-        message: 'Ese tamaño de entrada no existe en esta versión del juego.',
+        title: t('hud.invalid_table_title'),
+        message: t('hud.invalid_table_msg'),
       });
 
       return;
@@ -642,9 +641,8 @@ function App() {
   const handleRetirar = (monto) => {
     if (monto > saldo) {
       setAppleHud({
-        title: 'Saldo menor al pedido',
-
-        message: 'No puedes retirar más de lo que tienes en la demo.',
+        title: t('hud.withdraw_too_much_title'),
+        message: t('hud.withdraw_too_much_msg'),
       });
 
       return;
@@ -653,8 +651,10 @@ function App() {
     setSaldo((prev) => prev - monto);
 
     setAppleHud({
-      title: 'Retiro simulado',
-      message: `Procesamos $${monto.toLocaleString('es-MX', { maximumFractionDigits: 2 })} hacia tu wallet demo.`,
+      title: t('hud.withdraw_done_title'),
+      message: t('hud.withdraw_done_msg', {
+        amount: monto.toLocaleString(numLocale, { maximumFractionDigits: 2 }),
+      }),
     });
   };
 
@@ -671,9 +671,10 @@ function App() {
       setMatchSheet((s) => ({ ...s, open: false }));
       setFase('idle');
       setAppleHud({
-        title: 'Saliste del matchmaking',
-        message:
-          `La mesa de $${matchSheet.stake.toLocaleString('es-MX')} fue cancelada.`,
+        title: t('hud.queue_canceled_title'),
+        message: t('hud.queue_canceled_msg', {
+          stake: matchSheet.stake.toLocaleString(numLocale),
+        }),
       });
     })();
   };

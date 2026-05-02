@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import './LiveChatArena.css';
 import AvatarFace from './AvatarFace';
 import {
@@ -79,26 +80,26 @@ const SEED_MESSAGES = /** @type {ChatMessage[]} */ ([
   },
 ]);
 
-/** @param {number} net */
-function formatPnl(net) {
+/** @param {number} net @param {string} locale */
+function formatPnl(net, locale) {
   const sign = net >= 0 ? '+' : '−';
   const abs = Math.abs(net);
   const fmt = abs >= 100
-    ? abs.toLocaleString('es-MX', { maximumFractionDigits: 0 })
-    : abs.toLocaleString('es-MX', { maximumFractionDigits: 2 });
+    ? abs.toLocaleString(locale, { maximumFractionDigits: 0 })
+    : abs.toLocaleString(locale, { maximumFractionDigits: 2 });
   return `${sign}$${fmt}`;
 }
 
-/** @param {string} iso */
-function timeLabel(iso) {
+/** @param {string} iso @param {string} locale */
+function timeLabel(iso, locale) {
   const d = new Date(iso);
   if (Number.isNaN(d.valueOf())) return '';
-  return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
-/** @param {string} name */
-function shortName(name) {
-  if (!name) return '@anon';
+/** @param {string} name @param {string} fallback */
+function shortName(name, fallback = '@anon') {
+  if (!name) return fallback;
   if (name.startsWith('@')) return name.slice(0, 24);
   return `@${name.split('@')[0] || name}`.slice(0, 24);
 }
@@ -110,6 +111,11 @@ function netFromStats(stats) {
 }
 
 export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
+  const { t, i18n } = useTranslation();
+  const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+  const anonLabel = t('chat.anon_user');
+  const meLabel = t('chat.default_user');
+
   /** @type {[ChatMessage[], React.Dispatch<React.SetStateAction<ChatMessage[]>>]} */
   const [messages, setMessages] = useState(SEED_MESSAGES);
   const [draft, setDraft] = useState('');
@@ -329,7 +335,7 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
       // TODO[backend]: validar también server-side antes de producción
       //   (RLS: `player_can_write(auth.uid())`).
       if (!canWrite) {
-        setError('Necesitas saldo > 0 para escribir en el chat.');
+        setError(t('chat.error_balance'));
         return;
       }
       setError('');
@@ -341,7 +347,7 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
       const optimistic = /** @type {ChatMessage} */ ({
         id: `local-${Date.now()}`,
         user_id: myKey,
-        user_name: shortName(usuario?.email || '@yo'),
+        user_name: shortName(usuario?.email || meLabel, anonLabel),
         avatar: normalizeStoredAvatar(usuario?.avatar, usuario?.email),
         pais_code: usuario?.paisCode || 'XX',
         text,
@@ -360,13 +366,13 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
         const sessionRes = await supabase.auth.getSession();
         const uid = sessionRes.data.session?.user?.id;
         if (!uid) {
-          setError('Inicia sesión con Supabase para enviar mensajes.');
+          setError(t('chat.error_no_session'));
           return;
         }
 
         const { error: insErr } = await supabase.from('messages').insert({
           user_id: uid,
-          user_name: shortName(usuario?.email || ''),
+          user_name: shortName(usuario?.email || '', anonLabel),
           text,
           badge_earnings: myNet,
           avatar: optimistic.avatar,
@@ -374,17 +380,17 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
         });
 
         if (insErr) {
-          setError(insErr.message || 'No pudimos enviar el mensaje.');
+          setError(insErr.message || t('chat.error_send_generic'));
           return;
         }
         // Realtime se encargará de añadirlo a la lista.
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Error inesperado al enviar.');
+        setError(e instanceof Error ? e.message : t('chat.error_send_unexpected'));
       } finally {
         setSending(false);
       }
     },
-    [canWrite, meId, pnlByUser, supaConfigured, usuario],
+    [canWrite, meId, pnlByUser, supaConfigured, usuario, t, anonLabel, meLabel],
   );
 
   const handleSubmit = (e) => {
@@ -400,25 +406,21 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
   );
 
   return (
-    <section className="live-chat" aria-label="Chat en vivo de la arena">
+    <section className="live-chat" aria-label={t('chat.title')}>
       <header className="live-chat__header">
         <div className="live-chat__title">
           <span className="live-chat__title-pulse" aria-hidden />
-          Live chat · arena
+          {t('chat.title')}
         </div>
         <div className="live-chat__header-right">
           <span
             className={`live-chat__conn ${supaConfigured ? 'live-chat__conn--live' : 'live-chat__conn--demo'}`}
-            title={
-              supaConfigured
-                ? 'Conectado a Supabase · mensajes guardados en servidor'
-                : 'Modo demo · faltan VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY en Vercel'
-            }
+            title={supaConfigured ? t('chat.badge_live_title') : t('chat.badge_demo_title')}
           >
             <span className="live-chat__conn-dot" aria-hidden />
-            {supaConfigured ? 'Live' : 'Demo'}
+            {supaConfigured ? t('chat.badge_live') : t('chat.badge_demo')}
           </span>
-          <span className="live-chat__count">{renderable.length} msj</span>
+          <span className="live-chat__count">{t('chat.msg_count', { count: renderable.length })}</span>
         </div>
       </header>
 
@@ -426,7 +428,7 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
         {renderable.map((m) => {
           const isMine = meId
             ? m.user_id === meId
-            : usuario && m.user_name === shortName(usuario.email);
+            : usuario && m.user_name === shortName(usuario.email, anonLabel);
           const live = pnlByUser[m.user_id];
           const liveNet = netFromStats(live);
           const net = liveNet != null ? liveNet : Number(m.badge_earnings) || 0;
@@ -445,18 +447,11 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
               </span>
               <div className="live-chat__body">
                 <div className="live-chat__row">
-                  <span className="live-chat__name">{shortName(m.user_name)}</span>
-                  <span
-                    className={badgeClass}
-                    title={
-                      live
-                        ? `Ganado $${live.total_won.toLocaleString('es-MX')} · Perdido $${live.total_lost.toLocaleString('es-MX')}`
-                        : 'PnL al momento del mensaje'
-                    }
-                  >
-                    {formatPnl(net)}
+                  <span className="live-chat__name">{shortName(m.user_name, anonLabel)}</span>
+                  <span className={badgeClass}>
+                    {formatPnl(net, numLocale)}
                   </span>
-                  <span className="live-chat__time">{timeLabel(m.created_at)}</span>
+                  <span className="live-chat__time">{timeLabel(m.created_at, numLocale)}</span>
                 </div>
                 <p className="live-chat__text">{m.text}</p>
               </div>
@@ -475,8 +470,8 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
             onChange={(e) => setDraft(e.target.value)}
             placeholder={
               canWrite
-                ? 'Escribe un mensaje en la arena…'
-                : 'Necesitas saldo > 0 para escribir'
+                ? t('chat.input_placeholder_can')
+                : t('chat.input_placeholder_no_balance')
             }
             disabled={!canWrite || sending}
           />
@@ -485,15 +480,15 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
             className="live-chat__send"
             disabled={!canWrite || sending || draft.trim().length === 0}
           >
-            {sending ? 'Enviando' : 'Enviar'}
+            {sending ? t('chat.sending') : t('chat.send')}
           </button>
         </form>
         <p className="live-chat__hint" role="status">
           {error
             ? error
             : supaConfigured
-              ? 'Mensajes en tiempo real · canal public:messages'
-              : 'Modo demo · conecta Supabase para ver mensajes reales'}
+              ? t('chat.hint_realtime')
+              : t('chat.hint_demo')}
         </p>
       </footer>
     </section>

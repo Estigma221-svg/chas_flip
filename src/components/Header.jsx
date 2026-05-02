@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AvatarFace from './AvatarFace';
 import CountryFlag from './CountryFlag';
+import LanguagePicker from './LanguagePicker';
 import {
   isSoundEnabled,
   playFlipTick,
@@ -9,6 +11,7 @@ import {
 } from '../utils/sound';
 
 export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
+  const { t, i18n } = useTranslation();
   const [walletConectada, setWalletConectada] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
 
@@ -18,11 +21,12 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
     setSoundEnabled(next);
     setSoundOn(next);
     if (next) {
-      // Audible confirmation: a quick metallic tick proves the audio works.
       playFlipTick({ volume: 0.11 });
       setTimeout(() => playFlipTick({ pitchVar: 0.045, volume: 0.1 }), 75);
     }
   };
+
+  const localeForNumber = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
 
   return (
     <header className="header-flex">
@@ -48,12 +52,14 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
       </div>
 
       <div className="header-right">
+        <LanguagePicker />
+
         <button
           type="button"
           className={`btn-glass btn-glass--icon ${soundOn ? 'is-active' : ''}`}
           onClick={toggleSound}
-          title={soundOn ? 'Sonido activado · click para silenciar' : 'Sonido apagado · click para activar'}
-          aria-label={soundOn ? 'Silenciar sonidos' : 'Activar sonidos'}
+          title={soundOn ? t('header.sound_on_title') : t('header.sound_off_title')}
+          aria-label={soundOn ? t('header.sound_aria_mute') : t('header.sound_aria_unmute')}
         >
           <span className="btn-icon">{soundOn ? '🔊' : '🔇'}</span>
         </button>
@@ -64,7 +70,7 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
           onClick={() => setWalletConectada((v) => !v)}
         >
           <span className="btn-icon">🔗</span>
-          {walletConectada ? 'Wallet conectada' : 'Conectar wallet'}
+          {walletConectada ? t('header.wallet_connected') : t('header.connect_wallet')}
         </button>
 
         <button
@@ -72,7 +78,7 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
           className="btn-glass btn-glass--secondary"
           onClick={onRetirar}
         >
-          Retirar
+          {t('header.withdraw')}
         </button>
 
         <button
@@ -80,12 +86,12 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
           className="btn-glass btn-glass--primary"
           onClick={onDepositar}
         >
-          Depositar
+          {t('header.deposit')}
         </button>
 
         <div className="balance-card">
-          <small>Saldo USDT</small>
-          <h2>${saldo.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h2>
+          <small>{t('header.balance_label')}</small>
+          <h2>${saldo.toLocaleString(localeForNumber, { maximumFractionDigits: 2 })}</h2>
         </div>
       </div>
     </header>
