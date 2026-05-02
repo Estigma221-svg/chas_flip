@@ -8,6 +8,7 @@ html {
   width: 100%;
   min-height: 100%;
   background: #050505;
+  overflow-x: hidden;
 }
 
 body {
@@ -20,6 +21,8 @@ body {
    definidos en App.css (por eso “se veía igual”). */
 #root {
   width: 100%;
+  max-width: 100%;
   min-height: 100%;
   background: transparent;
+  overflow-x: hidden;
 }
