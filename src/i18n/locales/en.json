@@ -100,7 +100,12 @@
     "deposit_now": "Deposit now",
     "withdraw_now": "Withdraw now",
     "footer_note": "⛓ Production: contract escrow · randomness verifiable on Chainlink VRF explorer",
-    "alert_invalid_amount": "Enter a valid amount"
+    "alert_invalid_amount": "Enter a valid amount",
+    "withdraw_confirm_title": "Confirm withdrawal",
+    "withdraw_confirm_msg": "You're about to withdraw ${{amount}}. This action is final in the demo.",
+    "confirm_cta": "Yes, withdraw",
+    "back_cta": "Back",
+    "processing": "Processing…"
   },
   "matchmaking": {
     "title_searching": "Searching opponent",
@@ -136,6 +141,20 @@
     "profile_failed_title": "We couldn't write your profile",
     "profile_failed_msg": "Run the BOOTSTRAP.sql in your Supabase project so the `profiles` table and RLS exist.",
     "supabase_failed_title": "Connection to Supabase failed",
-    "supabase_failed_msg": "Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and try again."
+    "supabase_failed_msg": "Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and try again.",
+    "err_title": "Heads up",
+    "err": {
+      "chat_rate_limited": "You're sending messages too fast. Wait a few seconds.",
+      "matchmaking_rate_limited": "Easy — too many tries in a row. Wait a few seconds.",
+      "unauthenticated": "Your session expired. Please reload the page.",
+      "invalid_stake_tier": "That stake table is not valid.",
+      "match_not_found": "Round not found.",
+      "match_not_in_progress": "This round already closed.",
+      "forbidden": "You can't do that.",
+      "profile_upsert_failed": "We couldn't save your profile.",
+      "anon_disabled": "Anonymous sign-in is disabled in Supabase.",
+      "network": "Network issue. Check your connection and retry.",
+      "unknown": "Something went wrong. Please try again."
+    }
   }
 }

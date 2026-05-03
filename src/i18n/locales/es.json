@@ -100,7 +100,12 @@
     "deposit_now": "Depositar ahora",
     "withdraw_now": "Retirar ahora",
     "footer_note": "⛓ Producción: escrow en contrato · aleatoriedad Chainlink VRF verificable en explorer",
-    "alert_invalid_amount": "Ingresa un monto válido"
+    "alert_invalid_amount": "Ingresa un monto válido",
+    "withdraw_confirm_title": "Confirma el retiro",
+    "withdraw_confirm_msg": "Estás a punto de retirar ${{amount}}. Esta acción es definitiva en el demo.",
+    "confirm_cta": "Sí, retirar",
+    "back_cta": "Atrás",
+    "processing": "Procesando…"
   },
   "matchmaking": {
     "title_searching": "Buscando oponente",
@@ -136,6 +141,20 @@
     "profile_failed_title": "No pudimos escribir tu perfil",
     "profile_failed_msg": "Corre el BOOTSTRAP.sql en tu proyecto de Supabase para que existan la tabla `profiles` y sus RLS.",
     "supabase_failed_title": "Conexión con Supabase falló",
-    "supabase_failed_msg": "Revisa VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY y vuelve a intentar."
+    "supabase_failed_msg": "Revisa VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY y vuelve a intentar.",
+    "err_title": "Aviso",
+    "err": {
+      "chat_rate_limited": "Estás escribiendo demasiado rápido. Espera unos segundos.",
+      "matchmaking_rate_limited": "Calma — demasiados intentos seguidos. Espera unos segundos.",
+      "unauthenticated": "Tu sesión expiró. Recarga la página.",
+      "invalid_stake_tier": "Esa mesa no es válida.",
+      "match_not_found": "Ronda no encontrada.",
+      "match_not_in_progress": "Esta ronda ya cerró.",
+      "forbidden": "No puedes hacer eso.",
+      "profile_upsert_failed": "No pudimos guardar tu perfil.",
+      "anon_disabled": "El acceso anónimo está deshabilitado en Supabase.",
+      "network": "Problema de red. Revisa tu conexión e inténtalo de nuevo.",
+      "unknown": "Algo falló. Por favor inténtalo de nuevo."
+    }
   }
 }
