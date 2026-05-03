@@ -14,6 +14,7 @@ import { findCountry } from './data/countries';
 import { getProtocolTreasuryAddress, getRuntimeConfigSummary } from './config/appEnv.js';
 import { isSupabaseBrowserConfigured, isSupabaseMatchmakingEnabled } from './config/supabaseEnv.js';
 import { getSupabaseBrowserClient } from './lib/supabaseClient.js';
+import { safeSupabaseErrorCode } from './lib/supabaseError.js';
 import {
   cancelQueuedMatchmaking,
   ensureSupabaseSessionAndProfile,
@@ -94,6 +95,14 @@ function App() {
   const matchRowUnsubRef = useRef(/** @type {null | (() => void)} */ (null));
   const queueWatchdogRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null));
   const postRoundTimerRef = useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null));
+  // Guards de doble-click: bloquean re-entradas a operaciones que mueven dinero.
+  const jugarBusyRef = useRef(false);
+  const retiroBusyRef = useRef(false);
+  // Limpiamos el guard de `jugar` cuando vuelve a 'idle' (por cualquier razón:
+  // resolución, cancel, timeout, error). Así el siguiente click ya puede pasar.
+  useEffect(() => {
+    if (fase === 'idle') jugarBusyRef.current = false;
+  }, [fase]);
 
   const clearPostRoundTimer = useCallback(() => {
     if (postRoundTimerRef.current != null) {
@@ -550,7 +559,13 @@ function App() {
           searchTicksStop?.();
           clearMatchmakingListeners();
 
-          const msg = e instanceof Error ? e.message : String(e);
+          // No filtramos detalles internos: traducimos el código a un mensaje
+          // genérico vía i18n.  El mensaje crudo solo va a console.warn (DEV).
+          if (import.meta.env.DEV) {
+            console.warn('[chasflip] matchmaking_join error:', e);
+          }
+          const code = safeSupabaseErrorCode(e);
+
           setSaldo((prev) => prev + monto);
           setMatchSheet({
             open: false,
@@ -562,8 +577,8 @@ function App() {
           setFase('idle');
 
           setAppleHud({
-            title: 'Supabase rechazó el matchmaking',
-            message: `${msg}. Verifica políticas SQL o que la migración se aplicara.`,
+            title: t('hud.err_title'),
+            message: t(`hud.err.${code}`, t('hud.err.unknown')),
           });
         }
       })();
@@ -577,12 +592,20 @@ function App() {
   );
 
   const jugar = (monto) => {
+    // Defensa-en-profundidad: aunque los botones ya se deshabilitan cuando
+    // `fase !== 'idle'`, este ref bloquea re-entradas en el mismo tick antes
+    // de que React rerenderice.
+    if (jugarBusyRef.current) return;
+    jugarBusyRef.current = true;
+    // Si caemos en una validación temprana, liberamos el guard inmediatamente.
+    const release = () => { jugarBusyRef.current = false; };
+
     if (saldo < monto) {
       setAppleHud({
         title: t('hud.insufficient_title'),
         message: t('hud.insufficient_msg'),
       });
-
+      release();
       return;
     }
 
@@ -596,12 +619,15 @@ function App() {
         title: t('hud.invalid_table_title'),
         message: t('hud.invalid_table_msg'),
       });
-
+      release();
       return;
     }
 
     clearPostRoundTimer();
 
+    // El guard se libera en el listener que pone `fase` de vuelta a 'idle'
+    // (post-resolución, cancelación o timeout). Mientras tanto, otros clicks
+    // están bloqueados también por `disabled={fase !== 'idle'}` en el botón.
     setFase('buscando');
 
     setResultado(null);
@@ -633,29 +659,41 @@ function App() {
   };
 
   const handleDepositar = (monto) => {
-    prewarmAudio();
-    playDepositSound();
-    setSaldo((prev) => prev + monto);
+    if (retiroBusyRef.current) return;
+    retiroBusyRef.current = true;
+    try {
+      prewarmAudio();
+      playDepositSound();
+      setSaldo((prev) => prev + monto);
+    } finally {
+      // Liberación inmediata: el depósito es local y síncrono.
+      retiroBusyRef.current = false;
+    }
   };
 
   const handleRetirar = (monto) => {
-    if (monto > saldo) {
+    if (retiroBusyRef.current) return;
+    retiroBusyRef.current = true;
+    try {
+      if (monto > saldo) {
+        setAppleHud({
+          title: t('hud.withdraw_too_much_title'),
+          message: t('hud.withdraw_too_much_msg'),
+        });
+        return;
+      }
+
+      setSaldo((prev) => prev - monto);
+
       setAppleHud({
-        title: t('hud.withdraw_too_much_title'),
-        message: t('hud.withdraw_too_much_msg'),
+        title: t('hud.withdraw_done_title'),
+        message: t('hud.withdraw_done_msg', {
+          amount: monto.toLocaleString(numLocale, { maximumFractionDigits: 2 }),
+        }),
       });
-
-      return;
+    } finally {
+      retiroBusyRef.current = false;
     }
-
-    setSaldo((prev) => prev - monto);
-
-    setAppleHud({
-      title: t('hud.withdraw_done_title'),
-      message: t('hud.withdraw_done_msg', {
-        amount: monto.toLocaleString(numLocale, { maximumFractionDigits: 2 }),
-      }),
-    });
   };
 
   const handleCancelQueuedMatch = () => {

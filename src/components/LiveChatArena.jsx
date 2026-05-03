@@ -8,6 +8,7 @@ import {
 } from '../data/chasflipAvatars.js';
 import { isSupabaseBrowserConfigured } from '../config/supabaseEnv.js';
 import { getSupabaseBrowserClient } from '../lib/supabaseClient.js';
+import { safeSupabaseErrorCode } from '../lib/supabaseError.js';
 
 const MAX_LEN = 240;
 const FETCH_LIMIT = 50;
@@ -121,6 +122,8 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  // Guard de doble-click: bloquea envíos consecutivos incluso entre renders.
+  const sendingRef = useRef(false);
   const [meId, setMeId] = useState(/** @type {string | null} */ (null));
 
   /** Mapa user_id → { total_won, total_lost } sincronizado por realtime. */
@@ -328,6 +331,7 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
   const sendMessage = useCallback(
     /** @param {string} textRaw */
     async (textRaw) => {
+      if (sendingRef.current) return;
       const text = textRaw.trim();
       if (!text || text.length > MAX_LEN) return;
 
@@ -355,6 +359,7 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
         created_at: new Date().toISOString(),
       });
 
+      sendingRef.current = true;
       setSending(true);
       try {
         if (!supaConfigured) {
@@ -380,13 +385,17 @@ export default function LiveChatArena({ usuario, saldo, myStats, supaUserId }) {
         });
 
         if (insErr) {
-          setError(insErr.message || t('chat.error_send_generic'));
+          // Sanitiza: nunca mostramos el mensaje crudo de Supabase al usuario.
+          const code = safeSupabaseErrorCode(insErr);
+          setError(t(`hud.err.${code}`, t('chat.error_send_generic')));
           return;
         }
         // Realtime se encargará de añadirlo a la lista.
       } catch (e) {
-        setError(e instanceof Error ? e.message : t('chat.error_send_unexpected'));
+        const code = safeSupabaseErrorCode(e);
+        setError(t(`hud.err.${code}`, t('chat.error_send_unexpected')));
       } finally {
+        sendingRef.current = false;
         setSending(false);
       }
     },

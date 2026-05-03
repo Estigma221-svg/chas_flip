@@ -100,7 +100,12 @@
     "deposit_now": "Jetzt einzahlen",
     "withdraw_now": "Jetzt abheben",
     "footer_note": "⛓ Produktion: Vertrags-Escrow · Zufall verifizierbar im Chainlink-VRF-Explorer",
-    "alert_invalid_amount": "Gib einen gültigen Betrag ein"
+    "alert_invalid_amount": "Gib einen gültigen Betrag ein",
+    "withdraw_confirm_title": "Auszahlung bestätigen",
+    "withdraw_confirm_msg": "Du bist dabei, ${{amount}} auszuzahlen. Diese Aktion ist in der Demo endgültig.",
+    "confirm_cta": "Ja, auszahlen",
+    "back_cta": "Zurück",
+    "processing": "Wird verarbeitet…"
   },
   "matchmaking": {
     "title_searching": "Suche Gegner",
@@ -136,6 +141,20 @@
     "profile_failed_title": "Profil konnte nicht geschrieben werden",
     "profile_failed_msg": "Führe BOOTSTRAP.sql in deinem Supabase-Projekt aus, damit Tabelle `profiles` und ihre RLS existieren.",
     "supabase_failed_title": "Verbindung zu Supabase fehlgeschlagen",
-    "supabase_failed_msg": "Prüfe VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY und versuche es erneut."
+    "supabase_failed_msg": "Prüfe VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY und versuche es erneut.",
+    "err_title": "Achtung",
+    "err": {
+      "chat_rate_limited": "Du sendest Nachrichten zu schnell. Warte ein paar Sekunden.",
+      "matchmaking_rate_limited": "Ruhig — zu viele Versuche hintereinander. Warte ein paar Sekunden.",
+      "unauthenticated": "Deine Sitzung ist abgelaufen. Bitte lade die Seite neu.",
+      "invalid_stake_tier": "Dieser Tisch ist nicht gültig.",
+      "match_not_found": "Runde nicht gefunden.",
+      "match_not_in_progress": "Diese Runde ist bereits beendet.",
+      "forbidden": "Das kannst du nicht tun.",
+      "profile_upsert_failed": "Wir konnten dein Profil nicht speichern.",
+      "anon_disabled": "Anonyme Anmeldung ist in Supabase deaktiviert.",
+      "network": "Netzwerkproblem. Prüfe deine Verbindung und versuche es erneut.",
+      "unknown": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    }
   }
 }
