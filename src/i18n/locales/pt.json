@@ -69,6 +69,18 @@
     "live_strip_done": "Mesa fechada",
     "live_strip_meta_live": "Conectado · partida ao vivo"
   },
+  "free_play": {
+    "cta_hint": "Toque qualquer valor para sua rodada grátis",
+    "cta_sub": "Primeira rodada · sem depósito · apenas 1 vez",
+    "cta_aria": "Botão para jogar grátis",
+    "searching": "Pareando com um oponente estilo real…",
+    "flipping": "A moeda está no ar — esta vai por conta da casa.",
+    "banner_pill": "Rodada grátis · cortesia",
+    "banner_title": "Você teria ganhado ${{amount}}",
+    "banner_sub": "Isso poderia ser seu de verdade. Conecte sua wallet para jogar com apostas on-chain — ou teste o fluxo com um depósito demo.",
+    "cta_wallet": "Conectar wallet",
+    "cta_deposit": "Testar com depósito demo"
+  },
   "chat": {
     "title": "Chat ao vivo · arena",
     "msg_count": "{{count}} msg",
@@ -142,6 +154,8 @@
     "profile_failed_msg": "Rode o BOOTSTRAP.sql no seu projeto Supabase para que a tabela `profiles` e suas RLS existam.",
     "supabase_failed_title": "Falha de conexão com o Supabase",
     "supabase_failed_msg": "Verifique VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY e tente novamente.",
+    "wallet_soon_title": "Wallet on-chain · em breve",
+    "wallet_soon_msg": "As apostas reais on-chain em Base/Polygon chegam em breve. Enquanto isso, você pode fazer um depósito demo no cabeçalho para continuar jogando.",
     "err_title": "Atenção",
     "err": {
       "chat_rate_limited": "Você está escrevendo muito rápido. Aguarde alguns segundos.",

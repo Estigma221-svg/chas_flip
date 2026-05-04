@@ -1596,6 +1596,197 @@ button, input{
 }
 
 /* ===========================
+   FREE PLAY · CTA + BANNER
+   =========================== */
+
+/* Hint con pulso debajo de las cifras: "Toca cualquier cifra para tu tiro gratis" */
+.arena-freeplay-cta{
+  position: relative;
+  margin: 18px auto 4px;
+  padding: 12px 20px;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 70, 90, 0.18), rgba(255, 70, 90, 0.06));
+  border: 1px solid rgba(255, 70, 90, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 70, 90, 0.18),
+    0 0 28px rgba(255, 70, 90, 0.28),
+    inset 0 0 22px rgba(255, 70, 90, 0.08);
+  animation: freeplayPulse 2.2s ease-in-out infinite;
+}
+.arena-freeplay-cta__pulse{
+  position: absolute;
+  top: 10px; right: 14px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #ff4860;
+  box-shadow: 0 0 12px #ff4860;
+  animation: freeplayDotPulse 1.4s ease-in-out infinite;
+}
+.arena-freeplay-cta__label{
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255, 70, 90, 0.55);
+}
+.arena-freeplay-cta__sub{
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.7);
+}
+@keyframes freeplayPulse{
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255,70,90,0.18), 0 0 22px rgba(255,70,90,0.22), inset 0 0 18px rgba(255,70,90,0.06); }
+  50%      { box-shadow: 0 0 0 1px rgba(255,70,90,0.30), 0 0 38px rgba(255,70,90,0.38), inset 0 0 26px rgba(255,70,90,0.12); }
+}
+@keyframes freeplayDotPulse{
+  0%, 100% { transform: scale(1);   opacity: 0.85; }
+  50%      { transform: scale(1.4); opacity: 1; }
+}
+
+/* Botones de stake en modo free play: marco rojo en lugar de dorado */
+.bet-btn.is-freeplay{
+  border-color: rgba(255, 70, 90, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 70, 90, 0.18),
+    0 0 22px rgba(255, 70, 90, 0.22),
+    inset 0 0 14px rgba(255, 70, 90, 0.08) !important;
+  animation: freeplayPulse 2.4s ease-in-out infinite;
+}
+
+/* Banner especial post-tiro gratis */
+.arena-freeplay-banner{
+  position: relative;
+  margin: 22px auto 4px;
+  padding: 22px 28px 20px;
+  max-width: 540px;
+  border-radius: 22px;
+  background:
+    linear-gradient(160deg, rgba(0, 230, 122, 0.10), rgba(0, 230, 122, 0.02) 60%),
+    rgba(8, 12, 22, 0.74);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(0, 230, 122, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(0, 230, 122, 0.18),
+    0 0 42px rgba(0, 230, 122, 0.28),
+    inset 0 0 30px rgba(0, 230, 122, 0.06);
+  animation: freeplayWonGlow 2.6s ease-in-out infinite;
+  text-align: center;
+}
+@keyframes freeplayWonGlow{
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0,230,122,0.18), 0 0 36px rgba(0,230,122,0.24), inset 0 0 24px rgba(0,230,122,0.05); }
+  50%      { box-shadow: 0 0 0 1px rgba(0,230,122,0.35), 0 0 60px rgba(0,230,122,0.42), inset 0 0 36px rgba(0,230,122,0.12); }
+}
+.arena-freeplay-banner__head{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 9px;
+  border-radius: 999px;
+  background: rgba(0, 230, 122, 0.15);
+  border: 1px solid rgba(0, 230, 122, 0.45);
+  margin-bottom: 12px;
+}
+.arena-freeplay-banner__pulse{
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #00e67a;
+  box-shadow: 0 0 10px #00e67a;
+  animation: freeplayDotPulse 1.4s ease-in-out infinite;
+}
+.arena-freeplay-banner__pill{
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #00e67a;
+}
+.arena-freeplay-banner__title{
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(0, 230, 122, 0.55);
+}
+.arena-freeplay-banner__sub{
+  margin: 0 auto 18px;
+  max-width: 420px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.8);
+}
+.arena-freeplay-banner__ctas{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.arena-freeplay-banner__cta{
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.arena-freeplay-banner__cta:hover{ transform: translateY(-1px); }
+.arena-freeplay-banner__cta--primary{
+  background: linear-gradient(135deg, #f7931a, #f59e0b);
+  color: #0a0e16;
+  box-shadow: 0 0 0 1px rgba(247, 147, 26, 0.55), 0 8px 26px rgba(247, 147, 26, 0.35);
+}
+.arena-freeplay-banner__cta--primary:hover{
+  box-shadow: 0 0 0 1px rgba(247, 147, 26, 0.7), 0 12px 32px rgba(247, 147, 26, 0.5);
+}
+.arena-freeplay-banner__cta--secondary{
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.arena-freeplay-banner__cta--secondary:hover{
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.arena-freeplay-banner__close{
+  position: absolute;
+  top: 10px; right: 12px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+}
+.arena-freeplay-banner__close:hover{
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Mobile: banner se ajusta y CTAs se apilan */
+@media (max-width: 540px){
+  .arena-freeplay-banner{ padding: 18px 16px 16px; }
+  .arena-freeplay-banner__title{ font-size: 22px; }
+  .arena-freeplay-banner__cta{ width: 100%; justify-content: center; }
+  .arena-freeplay-cta{ padding: 10px 14px; }
+  .arena-freeplay-cta__label{ font-size: 12.5px; }
+  .arena-freeplay-cta__sub{ font-size: 10.5px; text-align: center; }
+}
+
+/* ===========================
    CHART CARD (defined height)
    =========================== */
 .chart-card{

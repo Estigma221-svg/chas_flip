@@ -10,9 +10,15 @@ import {
   setSoundEnabled,
 } from '../utils/sound';
 
-export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
+export default function Header({
+  usuario,
+  saldo,
+  walletConectada = false,
+  onConectarWallet,
+  onDepositar,
+  onRetirar,
+}) {
   const { t, i18n } = useTranslation();
-  const [walletConectada, setWalletConectada] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
 
   const toggleSound = () => {
@@ -67,7 +73,7 @@ export default function Header({ usuario, saldo, onDepositar, onRetirar }) {
         <button
           type="button"
           className={`btn-glass ${walletConectada ? 'is-active' : ''}`}
-          onClick={() => setWalletConectada((v) => !v)}
+          onClick={onConectarWallet}
         >
           <span className="btn-icon">🔗</span>
           {walletConectada ? t('header.wallet_connected') : t('header.connect_wallet')}
