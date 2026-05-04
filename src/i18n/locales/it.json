@@ -69,6 +69,18 @@
     "live_strip_done": "Tavolo chiuso",
     "live_strip_meta_live": "Connesso · partita live"
   },
+  "free_play": {
+    "cta_hint": "Tocca qualsiasi importo per il tuo lancio gratuito",
+    "cta_sub": "Primo lancio · nessun deposito · solo 1 round",
+    "cta_aria": "Pulsante per giocare gratis",
+    "searching": "Ti stiamo abbinando a un avversario stile reale…",
+    "flipping": "La moneta è in aria — questa la offre la casa.",
+    "banner_pill": "Round gratis · omaggio",
+    "banner_title": "Avresti vinto ${{amount}}",
+    "banner_sub": "Questo potrebbe essere tuo davvero. Connetti il tuo wallet per giocare con puntate on-chain — o prova il flusso con un deposito demo.",
+    "cta_wallet": "Connetti wallet",
+    "cta_deposit": "Prova con deposito demo"
+  },
   "chat": {
     "title": "Live chat · arena",
     "msg_count": "{{count}} msg",
@@ -142,6 +154,8 @@
     "profile_failed_msg": "Esegui il BOOTSTRAP.sql nel tuo progetto Supabase perché esistano la tabella `profiles` e le sue RLS.",
     "supabase_failed_title": "Connessione a Supabase fallita",
     "supabase_failed_msg": "Controlla VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY e riprova.",
+    "wallet_soon_title": "Wallet on-chain · in arrivo",
+    "wallet_soon_msg": "Le puntate reali on-chain su Base/Polygon arriveranno a breve. Nel frattempo puoi fare un deposito demo dall'header per continuare a giocare.",
     "err_title": "Attenzione",
     "err": {
       "chat_rate_limited": "Stai scrivendo troppo velocemente. Aspetta qualche secondo.",

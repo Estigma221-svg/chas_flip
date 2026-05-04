@@ -69,6 +69,18 @@
     "live_strip_done": "Table closed",
     "live_strip_meta_live": "Connected · live match"
   },
+  "free_play": {
+    "cta_hint": "Tap any amount for your free flip",
+    "cta_sub": "First taste · no deposit needed · 1 round only",
+    "cta_aria": "Free play call to action",
+    "searching": "Pairing you with a real-style opponent…",
+    "flipping": "Coin in the air — your free round, the house pays this one.",
+    "banner_pill": "Free round on us",
+    "banner_title": "You would've won ${{amount}}",
+    "banner_sub": "This could be yours for real. Connect your wallet to play with on-chain stakes — or test the flow with a demo deposit.",
+    "cta_wallet": "Connect wallet",
+    "cta_deposit": "Try a demo deposit"
+  },
   "chat": {
     "title": "Live chat · arena",
     "msg_count": "{{count}} msj",
@@ -142,6 +154,8 @@
     "profile_failed_msg": "Run the BOOTSTRAP.sql in your Supabase project so the `profiles` table and RLS exist.",
     "supabase_failed_title": "Connection to Supabase failed",
     "supabase_failed_msg": "Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and try again.",
+    "wallet_soon_title": "On-chain wallet · coming soon",
+    "wallet_soon_msg": "Real on-chain stakes on Base/Polygon are arriving shortly. Meanwhile you can do a demo deposit from the header to keep playing.",
     "err_title": "Heads up",
     "err": {
       "chat_rate_limited": "You're sending messages too fast. Wait a few seconds.",

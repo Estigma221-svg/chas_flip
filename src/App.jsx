@@ -68,6 +68,9 @@ function App() {
   const [ultimaGanancia, setUltimaGanancia] = useState(null);
   const [modal, setModal] = useState(null);
   const [verificationMeta, setVerificationMeta] = useState(null);
+  // Estado de wallet on-chain — vive en App para que Arena pueda dispararlo
+  // desde el banner del Free Play; el Header solo lee/escribe lo mismo.
+  const [walletConectada, setWalletConectada] = useState(false);
   const [appleHud, setAppleHud] = useState(
     /** @type {{ title: string, message?: string } | null} */ (null),
   );
@@ -696,6 +699,22 @@ function App() {
     }
   };
 
+  // CTA de "Conectar wallet". Hoy es cosmético (el botón solo refleja un
+  // toggle visual). Cuando integremos Privy/wagmi/RainbowKit este handler
+  // dispara el modal real del provider. Por ahora marca conectado y muestra
+  // un HUD educativo para no engañar al usuario.
+  const handleConnectWallet = () => {
+    if (walletConectada) {
+      setWalletConectada(false);
+      return;
+    }
+    setWalletConectada(true);
+    setAppleHud({
+      title: t('hud.wallet_soon_title'),
+      message: t('hud.wallet_soon_msg'),
+    });
+  };
+
   const handleCancelQueuedMatch = () => {
     void (async () => {
       try {
@@ -763,6 +782,8 @@ function App() {
         <Header
           usuario={usuario}
           saldo={saldo}
+          walletConectada={walletConectada}
+          onConectarWallet={handleConnectWallet}
           onDepositar={() => setModal('depositar')}
           onRetirar={() => setModal('retirar')}
         />
@@ -782,6 +803,8 @@ function App() {
                 rivalRemote={rivalRemote}
                 liveMatchRow={SUPABASE_MATCH_READY ? liveMatchRow : null}
                 onSeguirJugando={exitPostRoundToIdle}
+                onConectarWallet={handleConnectWallet}
+                onAbrirDeposito={() => setModal('depositar')}
               />
             </div>
 

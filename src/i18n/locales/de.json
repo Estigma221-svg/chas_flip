@@ -69,6 +69,18 @@
     "live_strip_done": "Tisch geschlossen",
     "live_strip_meta_live": "Verbunden · Live-Spiel"
   },
+  "free_play": {
+    "cta_hint": "Tippe auf einen beliebigen Betrag für deinen Gratis-Wurf",
+    "cta_sub": "Erster Wurf · keine Einzahlung · nur 1 Runde",
+    "cta_aria": "Aufruf zum Gratis-Wurf",
+    "searching": "Wir matchen dich mit einem realistischen Gegner…",
+    "flipping": "Die Münze fliegt — diese geht aufs Haus.",
+    "banner_pill": "Gratis-Runde · Geschenk",
+    "banner_title": "Du hättest ${{amount}} gewonnen",
+    "banner_sub": "Das könnte wirklich dir gehören. Verbinde deine Wallet, um mit On-Chain-Einsätzen zu spielen — oder teste den Ablauf mit einer Demo-Einzahlung.",
+    "cta_wallet": "Wallet verbinden",
+    "cta_deposit": "Mit Demo-Einzahlung testen"
+  },
   "chat": {
     "title": "Live-Chat · Arena",
     "msg_count": "{{count}} Nachr.",
@@ -142,6 +154,8 @@
     "profile_failed_msg": "Führe BOOTSTRAP.sql in deinem Supabase-Projekt aus, damit Tabelle `profiles` und ihre RLS existieren.",
     "supabase_failed_title": "Verbindung zu Supabase fehlgeschlagen",
     "supabase_failed_msg": "Prüfe VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY und versuche es erneut.",
+    "wallet_soon_title": "On-Chain-Wallet · bald verfügbar",
+    "wallet_soon_msg": "Echte On-Chain-Einsätze auf Base/Polygon kommen bald. In der Zwischenzeit kannst du eine Demo-Einzahlung im Header tätigen, um weiterzuspielen.",
     "err_title": "Achtung",
     "err": {
       "chat_rate_limited": "Du sendest Nachrichten zu schnell. Warte ein paar Sekunden.",
