@@ -4,12 +4,28 @@ import '@fontsource/inter/400.css';
 import '@fontsource/inter/700.css';
 import '@fontsource/inter/800.css';
 import '@fontsource/inter/900.css';
+import '@rainbow-me/rainbowkit/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import './index.css';
 import './i18n/index.js';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { wagmiConfig } from './lib/wagmiConfig.js';
+
+const queryClient = new QueryClient();
+
+// Tema RainbowKit afinado a la estética ChasFlip (glassmorphism + neón dorado).
+const chasflipRainbowTheme = darkTheme({
+  accentColor: '#f7c948',
+  accentColorForeground: '#0a0a0a',
+  borderRadius: 'large',
+  fontStack: 'system',
+  overlayBlur: 'large',
+});
 
 function GlobalFallback(error) {
   return (
@@ -140,7 +156,13 @@ if (!rootEl) {
     createRoot(rootEl).render(
       <StrictMode>
         <ErrorBoundary fallback={GlobalFallback}>
-          <App />
+          <WagmiProvider config={wagmiConfig}>
+            <QueryClientProvider client={queryClient}>
+              <RainbowKitProvider theme={chasflipRainbowTheme} modalSize="compact">
+                <App />
+              </RainbowKitProvider>
+            </QueryClientProvider>
+          </WagmiProvider>
         </ErrorBoundary>
       </StrictMode>,
     );

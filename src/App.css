@@ -543,6 +543,60 @@ button, input{
 }
 
 /* ===========================
+   WALLET BUTTON — address truncada + balance USDT (Polygon)
+   Mantiene la familia .btn-glass pero permite dos líneas en estado conectado
+   y un acento rojo cuando la red NO es Polygon (is-wrong-network).
+   =========================== */
+.btn-glass--wallet.is-active{
+  --btn-glow: rgba(247,201,72,.55);
+  --btn-ring: rgba(247,201,72,.28);
+  border-color: rgba(247,201,72,.5);
+  padding-left: 12px;
+  padding-right: 14px;
+}
+
+.btn-glass--wallet.is-wrong-network{
+  --btn-glow: rgba(255,77,77,.55);
+  --btn-ring: rgba(255,77,77,.28);
+  border-color: rgba(255,77,77,.55);
+  color: #ffd2d2;
+}
+
+.btn-wallet-info{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1.1;
+  gap: 1px;
+}
+
+.btn-wallet-info__addr{
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.btn-wallet-info__balance{
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  opacity: .82;
+  color: #f7c948;
+  white-space: nowrap;
+}
+
+.btn-glass--wallet.is-wrong-network .btn-wallet-info__balance{
+  color: #ffd2d2;
+}
+
+@media (max-width: 720px){
+  .btn-wallet-info__balance{ display: none; }
+}
+
+/* ===========================
    LANGUAGE PICKER (dropdown estilo glass, vive en .header-right)
    =========================== */
 .lang-picker{
