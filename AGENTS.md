@@ -97,15 +97,16 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
   cuenta de tesorería.
 
 ### 🔴 Lo que NO existe todavía (FASE 2+)
-- Tabla `transactions` / ledger autoritativo en Supabase
-- Idempotencia de depósitos/retiros
-- Chainlink VRF
-- Contrato escrow desplegado (sin `.sol`, sin ABI)
-- Pagos fiat (Stripe / MercadoPago / OXXO)
-- KYC / AML
-- Roles (admin) y rutas protegidas
-- MFA en retiros
-- Captcha en sign-in anónimo
+- Chainlink VRF (random() de Postgres todavía decide los flips).
+- Contrato `ChasFlipVault.sol` **deployado** (codigo + tests listos en
+  `contracts/`, pero esperando el `npm run deploy:amoy:vault`).
+- UI completa de "Depositar real" / "Retirar real" en el Modal (PR
+  posterior tras deploy del Vault).
+- Pagos fiat (Stripe / MercadoPago / OXXO).
+- KYC / AML.
+- Roles (admin) y rutas protegidas.
+- MFA en retiros.
+- Captcha en sign-in anónimo.
 
 ---
 
@@ -189,11 +190,21 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
   `isConnected`, `isOnSupportedChain`, `usdtBalanceFormatted` +
   `openConnectModal`/`openAccountModal`/`disconnect`.
 - `src/lib/useUserBalance.js` — hook que lee `get_user_balance()` + Realtime
-  sobre `public.transactions`. Fase 2.B.1 "shadow read" (no usado todavía).
+  sobre `public.transactions`. Activado en Fase 2.B.2 (fuente de verdad del
+  saldo cuando Supabase está listo).
+- `src/lib/useOnchainAddressLink.js` — hook que vincula la wallet conectada
+  con `auth.uid()` server-side (Fase 2.C.1).
+- `src/config/onchainEnv.js` — `getVaultConfig()` lee `VITE_VAULT_*`. Si
+  vacío, on-chain queda deshabilitado (UI cae al flujo demo).
 - `src/services/supabaseMatchmaking.js` — RPC wrappers + ensureSession.
 - `src/services/supabaseLedger.js` — wrappers de RPCs del ledger
   (`recordDepositDemo`, `recordWithdrawDemo`, `recordBonus`, `getUserBalance`,
   `subscribeUserTransactions`) + helper `freshIdempotencyKey()`.
+- `src/services/supabaseVault.js` — `linkOnchainAddress()`,
+  `requestWithdrawTicket()`. Fase 2.C.1.
+- `contracts/` — toolchain Hardhat (sub-proyecto npm). Contiene
+  `ChasFlipVault.sol`, `MockUSDT.sol`, tests, scripts de deploy y
+  `generate_wallets.js`. Solo se toca cuando hay cambios on-chain.
 - `src/config/supabaseEnv.js`, `src/config/appEnv.js`, `src/config/chains.js`.
 - `src/i18n/index.js` — init de i18next.
 - `src/i18n/locales/{en,es,pt,fr,de,it}.json` — traducciones.
@@ -289,26 +300,92 @@ Para cada tarea:
   lee eventos del contrato y acredita al ledger como `kind='deposit'` y
   `source='on_chain:<txHash>'`. La misma vía sirve para retiros.
 
-### Próximos pasos (FASE 2.C — dinero real)
-1. Escribir contrato escrow `.sol` con funciones `lockMatch(matchId, stake)`,
-   `resolveMatch(matchId, winnerAddress)` y `withdraw(amount)`.
-2. Integrar Chainlink VRF v2.5 en Polygon para randomness (reemplaza
-   `random()` server-side en `resolve_match_round`).
-3. Crear Edge Function en Supabase que escuche eventos `Deposit` / `Withdraw`
-   del contrato y los inserte en `transactions` con idempotency_key derivada
-   del `txHash` (`MD5(txHash || logIndex)` por ejemplo).
-4. UI: nuevo botón "Depositar on-chain" en el Modal que llama
-   `useWriteContract({ functionName: 'approve' })` + `deposit()`.
-5. Tabla `protocol_treasury_ledger` para registrar fees de cada match con
-   trazabilidad completa (hasta ahora el fee solo se ve en
-   `matches.protocol_fee_total`).
-6. Migración bridge opcional: `bonus:welcome_migration` del saldo
-   `localStorage` legacy al primer login con auth real, para no perder UX.
+- **Fase 2.C.1 — Vault on-chain básico**: ✅ EN REVIEW (rama
+  `feat/onchain-vault-amoy`). Componentes:
+  - **Contrato `ChasFlipVault.sol`** (Hardhat / Solidity 0.8.27, evm `cancun`,
+    `viaIR: true`). Hereda `Ownable2Step`, `Pausable`, `ReentrancyGuard`,
+    `EIP712`. Estado clave: `serverSigner`, `maxVaultSize`, `maxDepositAmount`,
+    `usedWithdrawNonces`. 18/18 tests pasan.
+  - **Contrato `MockUSDT.sol`** (ERC-20 con 6 decimales y `mint(addr, amount)`
+    publico) — usado en Hardhat local y en Polygon Amoy donde USDT canonico
+    no existe.
+  - **Migration SQL `20260513090000_onchain_vault.sql`** (aplicada en
+    Supabase): tablas `onchain_addresses`, `vault_deposits_seen`,
+    `vault_withdraw_intents`. RPCs:
+    `link_onchain_address` (cliente, idempotente, falla con `address_taken`),
+    `record_vault_deposit` (service_role, idempotente vía UNIQUE),
+    `issue_withdraw_intent` (cliente, debita atomicamente + asigna nonce),
+    `mark_withdraw_completed` (service_role, idempotente).
+  - **Edge Function `vault-deposit-listener`**: cron-poll de eventos
+    `Deposited` y `Withdrawn` del contrato. Cursor en `audit_log`,
+    confirmaciones configurables, max blocks por run, recuento de
+    `depositsProcessed/Skipped` y `errors[]` en la respuesta.
+  - **Edge Function `vault-withdraw-ticket`**: invoca `issue_withdraw_intent`
+    y firma EIP-712 con `SERVER_SIGNER_PRIVATE_KEY`. Implementado sin
+    dependencias pesadas: keccak via `@noble/hashes`, ECDSA secp256k1 via
+    `@noble/curves`.
+  - **Frontend**: `src/config/onchainEnv.js` (lee `VITE_VAULT_*`),
+    `src/services/supabaseVault.js` (link + ticket), hook
+    `src/lib/useOnchainAddressLink.js` que auto-vincula la wallet conectada
+    con el `auth.uid()` apenas el user firma sesión.
+  - **Pendiente para Fase 2.C.1.b**: UI completa "Depositar real" /
+    "Retirar real" en el Modal (requiere contrato deployado para testar
+    e2e).
+- **Fase 2.C.2 — VRF on-chain**: pendiente. Chainlink VRF v2.5 en Polygon
+  reemplazara `random()` server-side. Tipico costo ~$0.005 en LINK por
+  match.
+- **Fase 2.C.3 — Escrow por match**: opcional. Bets bloquean fondos
+  on-chain por match. Maxima auditabilidad publica.
+
+### Próximos pasos (FASE 2.C.1.b — deploy en Amoy)
+1. **Generar wallets**: `cd contracts && npm install && npm run generate-wallets`.
+   Copiar las dos privkeys al lugar indicado en stdout.
+2. **Fondear deployer**: pegar la `DEPLOYER` address en el faucet de Polygon
+   (https://faucet.polygon.technology/, seleccionar Amoy) para obtener MATIC.
+3. **Deploy MockUSDT** (solo Amoy, no en mainnet):
+   `npm run deploy:amoy:mock-usdt` → output: address del token.
+4. **Deploy ChasFlipVault**: `npm run deploy:amoy:vault` → output: address del
+   vault. El JSON queda en `contracts/deployments/amoy.local.json` (gitignored).
+5. **Setear env Vercel**: `VITE_VAULT_CHAIN_ID=80002`,
+   `VITE_VAULT_ADDRESS=0x...`, `VITE_VAULT_TOKEN_ADDRESS=0x...`.
+6. **Setear secrets Supabase Edge**:
+   ```sh
+   npx supabase secrets set --project-ref idfzvcnevihooaydvzmv \
+     SERVER_SIGNER_PRIVATE_KEY=0x... \
+     VAULT_RPC_URL=https://rpc-amoy.polygon.technology \
+     VAULT_CONTRACT_ADDRESS=0x... \
+     VAULT_CHAIN_ID=80002 \
+     VAULT_DEPLOY_BLOCK=<block_number_del_deploy>
+   ```
+7. **Deploy Edge Functions**:
+   ```sh
+   npx supabase functions deploy vault-deposit-listener vault-withdraw-ticket \
+     --project-ref idfzvcnevihooaydvzmv --no-verify-jwt
+   ```
+   (El listener corre via service_role, no necesita JWT. El ticket sí lo
+   necesita pero el flag se aplica solo a la verificación interna; el JWT
+   del cliente sigue siendo requerido por el RPC.)
+8. **Cron del listener**: armar workflow GitHub Actions cada minuto que
+   haga POST a `https://idfzvcnevihooaydvzmv.supabase.co/functions/v1/vault-deposit-listener`
+   con header `X-Listener-Secret: $VAULT_LISTENER_SHARED_SECRET` (set como
+   secret en Actions y como env de la Edge Function).
+
+### Próximos pasos (FASE 2.C.2 — VRF)
+1. Crear suscripcion Chainlink VRF v2.5 en Amoy (UI:
+   https://vrf.chain.link/polygon-amoy). Fondear con LINK del faucet.
+2. Escribir contrato `MatchOracle.sol` con
+   `requestMatchRandomness(matchId)` + `fulfillRandomWords(...)`.
+3. Modificar `resolve_match_round`: marcar match como `awaiting_vrf`, NO
+   decidir winner ahi. Crear Edge Function `vrf-trigger` que hace la
+   peticion on-chain y un listener `vrf-fulfilled-listener` que cierra el
+   match cuando llega el randomness.
 
 ### Otras tareas pendientes
 - Backups programados de Supabase + alertas (cuando haya tráfico).
 - Captcha en `signInAnonymously` cuando se vea abuso.
 - Roles + admin route + MFA (cuando haya panel admin).
+- Migración bridge opcional: `bonus:welcome_migration` del saldo
+  `localStorage` legacy al primer login con auth real.
 
 ---
 
@@ -322,10 +399,11 @@ Para cada tarea:
 
 ---
 
-*Última actualización: rama `feat/ledger-cutover` (Fase 2.B.2 — cutover del
-ledger al juego). `matchmaking_join` debita `bet` server-side, `resolve_match
-_round` acredita `win`, `cancel_matchmaking` hace `refund`. Frontend
-`App.jsx` consume `useUserBalance(supaUserId)` y los wrappers de
-`supabaseLedger.js`, con fallback automático a localStorage cuando Supabase
-no está configurado. Siguiente paso: Fase 2.C (dinero real on-chain).*
+*Última actualización: rama `feat/onchain-vault-amoy` (Fase 2.C.1 — vault
+on-chain básico). Contrato `ChasFlipVault.sol` (Hardhat, 18 tests pasan),
+migración `20260513090000_onchain_vault.sql`, dos Edge Functions
+(`vault-deposit-listener`, `vault-withdraw-ticket`) y vinculación
+wallet ↔ auth.uid en el frontend. UI de "Depositar/Retirar real" se hace
+en un PR posterior despues del deploy en Amoy. Siguiente paso: Fase 2.C.2
+(Chainlink VRF para randomness).*
 *Si tocas algo importante, actualiza la sección "Estado de producción" arriba.*

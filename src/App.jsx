@@ -36,6 +36,7 @@ import {
 import { DEFAULT_CHASFLIP_AVATAR_URL, normalizeStoredAvatar } from './data/chasflipAvatars.js';
 import { useWalletPanel } from './lib/useWalletPanel.js';
 import { useUserBalance } from './lib/useUserBalance.js';
+import { useOnchainAddressLink } from './lib/useOnchainAddressLink.js';
 import {
   freshIdempotencyKey,
   recordDepositDemo,
@@ -82,6 +83,7 @@ function App() {
   // del juego (eso llega en Fase 2.B con el ledger en Supabase).
   const {
     address: walletAddress,
+    chainId: walletChainId,
     isConnected: walletConectada,
     isOnSupportedChain: walletIsOnSupportedChain,
     usdtSymbol: walletUsdtSymbol,
@@ -136,6 +138,18 @@ function App() {
     },
     [useLedger],
   );
+
+  // -------------------- WALLET ↔ AUTH.UID LINK (Fase 2.C.1) ----------------
+  // Cuando el user conecta su wallet, intentamos vincular su address con su
+  // `auth.uid()` server-side (tabla `public.onchain_addresses`). Es idempotente.
+  // Cuando llegue un evento `Deposited` on-chain, el listener busca por address
+  // a quien acreditarle el saldo.
+  useOnchainAddressLink({
+    supaUserId,
+    walletAddress,
+    walletChainId,
+    walletConnected: Boolean(walletConectada),
+  });
 
   const unsubMatchesRef = useRef(/** @type {null | (() => void)} */ (null));
   const matchRowUnsubRef = useRef(/** @type {null | (() => void)} */ (null));
