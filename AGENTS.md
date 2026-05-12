@@ -68,22 +68,33 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
    `src/lib/useWalletPanel.js`, config en `src/lib/wagmiConfig.js`. **El saldo
    del juego sigue siendo DEMO local — la wallet conectada todavía NO mueve
    dinero (eso llega en Fase 2.C).**
-7. **Ledger autoritativo — Fase 2.B.1** (`feat/transactions-ledger` pendiente
-   de merge): tabla `public.transactions` (append-only) en Supabase con RLS
-   estricto (`SELECT` solo del propio user, `INSERT/UPDATE/DELETE` bloqueado al
-   cliente). Helper interno `apply_ledger_entry()` con `FOR UPDATE` para
-   atomicidad. 4 RPCs públicas: `record_deposit_demo`, `record_withdraw_demo`,
+7. **Ledger autoritativo + cutover — Fase 2.B (1 y 2 completas)** (rama
+   `feat/ledger-cutover`): tabla `public.transactions` (append-only) en Supabase
+   con RLS estricto (`SELECT` solo del propio user, `INSERT/UPDATE/DELETE`
+   bloqueado al cliente). Helper interno `apply_ledger_entry()` con `FOR UPDATE`
+   para atomicidad. RPCs públicas: `record_deposit_demo`, `record_withdraw_demo`,
    `record_bonus`, `get_user_balance`. Idempotencia con UUID client-generated.
-   Realtime publication agregada. Frontend listo (`supabaseLedger.js` +
-   `useUserBalance.js`) pero **NO está conectado todavía** — App.jsx sigue
-   usando `localStorage`. El cutover se hace en Fase 2.B.2.
+   Realtime publication agregada. **Cutover activo (Fase 2.B.2)**:
+   - `matchmaking_join(p_stake, p_idempotency_key uuid)` debita asiento `bet`
+     antes de tocar match_queue/matches; rechaza con `insufficient_funds` si
+     no hay saldo.
+   - `cancel_matchmaking()` emite `refund` por cada waiting eliminado.
+   - `resolve_match_round()` acredita `win` al ganador con idem deterministica.
+   - `App.jsx` consume el saldo via `useUserBalance(supaUserId)` con Realtime;
+     depósitos/retiros van por `recordDepositDemo` / `recordWithdrawDemo`.
+   - Si Supabase no está configurado el código cae al flujo legacy de
+     `localStorage` automáticamente.
 
 ### 🟡 Decorativo / placeholder hoy
-- **`VITE_FLIP_ENGINE=mock`**: el resultado del flip lo decide `random()` de
-  Postgres en `resolve_match_round`. NO hay VRF criptográfico todavía.
-- **Saldo USDT del header**: solo número en localStorage, sin ledger en server.
+- **`VITE_FLIP_ENGINE=mock`** + `random()` server-side: el resultado del flip
+  lo decide `random()` de Postgres en `resolve_match_round`. NO hay VRF
+  criptográfico todavía (eso llega en Fase 2.C con Chainlink VRF v2.5).
 - **Balance USDT on-chain** que se muestra en el botón de wallet: solo lectura.
-  Ni se suma al saldo demo ni habilita depósitos reales.
+  Ni se suma al saldo del juego ni habilita depósitos reales.
+- **Fee del protocolo**: hoy queda capturado en `matches.protocol_fee_total`
+  pero NO escribe un asiento en `transactions`. Cuando llegue la tabla
+  treasury en Fase 2.C, agregaremos el asiento `fee` con `user_id` de la
+  cuenta de tesorería.
 
 ### 🔴 Lo que NO existe todavía (FASE 2+)
 - Tabla `transactions` / ledger autoritativo en Supabase
@@ -250,46 +261,49 @@ Para cada tarea:
 - **Fase 2.A — Wallet connect real**: ✅ COMPLETADA.
 - **Fase 2.B.1 — Ledger autoritativo aditivo**: ✅ COMPLETADA. Tabla
   `transactions`, helper `apply_ledger_entry()`, 4 RPCs y Realtime listos.
-  Frontend con piezas (`useUserBalance`, `supabaseLedger.js`) pero AÚN NO
-  conectadas a `App.jsx`. Sin riesgo: no rompe nada existente.
-- **Fase 2.B.2 — Cutover**: PENDIENTE. Modificar `matchmaking_join` para
-  debitar `bet` al unirse + `resolve_match_round` para acreditar `win` y
-  registrar `fee` server-side. Migrar `App.jsx` para leer saldo del hook
-  `useUserBalance` y escribir vía `recordDepositDemo`/`recordWithdrawDemo`/
-  `recordBonus`. Decidir qué hacer con saldos en `localStorage` (probable: dar
-  bonus de bienvenida en `bonus:welcome_migration` el primer login para no
-  perder UX).
+- **Fase 2.B.2 — Cutover**: ✅ COMPLETADA. Migración
+  `20260512120000_ledger_cutover.sql`:
+  - `match_queue` agrega columna `bet_idem_key uuid` para refunds.
+  - `matchmaking_join(p_stake, p_idempotency_key uuid DEFAULT NULL)`: si el
+    cliente manda `p_idempotency_key`, debita asiento `bet -stake` ANTES de
+    tocar `match_queue`/`matches`. Si falla con `insufficient_funds` no entra
+    a cola. Si la llamada llega sin idem (legacy), no toca ledger.
+  - `cancel_matchmaking()`: refund por cada row eliminado con `bet_idem_key`,
+    con idempotency_key deterministica derivada del `queue_id`.
+  - `resolve_match_round(p_match_id)`: cuando declara winner, escribe asiento
+    `win` con idempotency_key deterministica
+    `deterministic_uuid('win:'||match_id)`. NO escribe `fee` (queda capturado
+    en `matches.protocol_fee_total` hasta que llegue la tabla treasury).
+  - Frontend: `App.jsx` ahora lee saldo de `useUserBalance(supaUserId)` cuando
+    `status === 'ready'`. `handleDepositar`/`handleRetirar` llaman a
+    `recordDepositDemo` / `recordWithdrawDemo`. `joinMatchmaking` recibe el
+    idem del `bet`. Cuando el ledger no está listo (Supabase no configurado
+    o auth pendiente) el cliente cae a `localSaldo` y el flujo legacy sigue
+    intacto.
+  - i18n: añadidos códigos de error `insufficient_funds`, `invalid_amount`,
+    `amount_too_small`, `amount_too_large`, `invalid_kind`, `invalid_reason`,
+    `idempotency_required` en los 6 idiomas.
 - **Fase 2.C — Dinero real on-chain**: pendiente. Contrato escrow `.sol`
   (referencia: `src/game/escrowPvP.js`) desplegado en Polygon + Chainlink VRF.
   El cliente firma `approve()` + `deposit()` con la wallet conectada; el server
   lee eventos del contrato y acredita al ledger como `kind='deposit'` y
   `source='on_chain:<txHash>'`. La misma vía sirve para retiros.
 
-### Próximos pasos (FASE 2.B.2 — cutover)
-1. Migración SQL: actualizar `matchmaking_join` para `INSERT` un asiento `bet`
-   atómico al unirse (rechaza si `insufficient_funds`). Actualizar
-   `resolve_match_round` para asientos `win` (ganador) y `fee` (treasury).
-2. Tabla `protocol_treasury_ledger` opcional para acumular fees (o asiento
-   con `user_id = treasury_uuid` cuando definamos cuenta de tesorería).
-3. Frontend: reemplazar `useState saldo` por `useUserBalance(supaUserId)`.
-4. Frontend: depositos/retiros usan `recordDepositDemo` / `recordWithdrawDemo`
-   con `idempotencyKey` desde `freshIdempotencyKey()`.
-5. Frontend: el banner "Probar gratis" llama `recordBonus({ amount, reason:
-   'free_play_first' })`.
-6. Migración bridge: dar `bonus:welcome_migration` de $X al primer login de
-   cada usuario existente (para no perder saldos demo legacy).
-7. Manejar `safeSupabaseErrorCode()` para mapear `insufficient_funds`,
-   `idempotency_required`, `amount_too_large`, etc. a `hud.err.<code>` i18n.
-
-### Fase 2.C (después de 2.B.2)
-1. Escribir contrato escrow `.sol` con función `lockMatch(matchId, stake)`,
+### Próximos pasos (FASE 2.C — dinero real)
+1. Escribir contrato escrow `.sol` con funciones `lockMatch(matchId, stake)`,
    `resolveMatch(matchId, winnerAddress)` y `withdraw(amount)`.
-2. Integrar Chainlink VRF v2.5 en Polygon para randomness.
+2. Integrar Chainlink VRF v2.5 en Polygon para randomness (reemplaza
+   `random()` server-side en `resolve_match_round`).
 3. Crear Edge Function en Supabase que escuche eventos `Deposit` / `Withdraw`
    del contrato y los inserte en `transactions` con idempotency_key derivada
    del `txHash` (`MD5(txHash || logIndex)` por ejemplo).
 4. UI: nuevo botón "Depositar on-chain" en el Modal que llama
    `useWriteContract({ functionName: 'approve' })` + `deposit()`.
+5. Tabla `protocol_treasury_ledger` para registrar fees de cada match con
+   trazabilidad completa (hasta ahora el fee solo se ve en
+   `matches.protocol_fee_total`).
+6. Migración bridge opcional: `bonus:welcome_migration` del saldo
+   `localStorage` legacy al primer login con auth real, para no perder UX.
 
 ### Otras tareas pendientes
 - Backups programados de Supabase + alertas (cuando haya tráfico).
@@ -308,7 +322,10 @@ Para cada tarea:
 
 ---
 
-*Última actualización: rama `feat/transactions-ledger` (Fase 2.B.1 — ledger
-autoritativo `public.transactions` + RPCs + Realtime + hooks frontend). El
-cutover (Fase 2.B.2) llega en un PR aparte.*
+*Última actualización: rama `feat/ledger-cutover` (Fase 2.B.2 — cutover del
+ledger al juego). `matchmaking_join` debita `bet` server-side, `resolve_match
+_round` acredita `win`, `cancel_matchmaking` hace `refund`. Frontend
+`App.jsx` consume `useUserBalance(supaUserId)` y los wrappers de
+`supabaseLedger.js`, con fallback automático a localStorage cuando Supabase
+no está configurado. Siguiente paso: Fase 2.C (dinero real on-chain).*
 *Si tocas algo importante, actualiza la sección "Estado de producción" arriba.*

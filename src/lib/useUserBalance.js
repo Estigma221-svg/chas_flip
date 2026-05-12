@@ -38,34 +38,57 @@ import { getUserBalance, subscribeUserTransactions } from '../services/supabaseL
  * @param {string | null | undefined} supaUserId  `auth.uid()` activo en App.jsx.
  * @returns {UseUserBalanceResult}
  */
+/**
+ * Estado inicial calculado a partir de las dependencias actuales. Sirve para
+ * (a) inicializar el primer render y (b) resetear de manera SÍNCRONA cuando
+ * cambian las deps relevantes — sin caer en `setState dentro de useEffect`,
+ * que dispara `react-hooks/set-state-in-effect` y cascading renders.
+ *
+ * @param {boolean} supabaseReady
+ * @param {string | null | undefined} supaUserId
+ * @returns {{balance: number | null, status: UseUserBalanceResult['status']}}
+ */
+function deriveInitial(supabaseReady, supaUserId) {
+  if (!supabaseReady) return { balance: null, status: 'disabled' };
+  if (!supaUserId) return { balance: null, status: 'unauthenticated' };
+  return { balance: null, status: 'loading' };
+}
+
 export function useUserBalance(supaUserId) {
   const supabaseReady = isSupabaseBrowserConfigured();
 
-  const [balance, setBalance] = useState(/** @type {number | null} */ (null));
-  const [status, setStatus] = useState(
-    /** @type {UseUserBalanceResult['status']} */ (
-      supabaseReady ? (supaUserId ? 'loading' : 'unauthenticated') : 'disabled'
-    ),
-  );
+  // Pattern oficial de React 19 para "adjusting some state when a prop
+  // changes" (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
+  // Mantenemos las deps previas en estado y, si cambiaron, reseteamos balance
+  // y status DURANTE el render. setState llamados durante el render no
+  // causan cascading renders mientras estén guardados detrás de una guarda
+  // de igualdad de valores como esta.
+  const [prevSupabaseReady, setPrevSupabaseReady] = useState(supabaseReady);
+  const [prevSupaUserId, setPrevSupaUserId] = useState(supaUserId ?? null);
+
+  const initial = deriveInitial(supabaseReady, supaUserId);
+  const [balance, setBalance] = useState(initial.balance);
+  const [status, setStatus] = useState(initial.status);
   const [error, setError] = useState(/** @type {Error | null} */ (null));
+
+  if (
+    prevSupabaseReady !== supabaseReady ||
+    prevSupaUserId !== (supaUserId ?? null)
+  ) {
+    setPrevSupabaseReady(supabaseReady);
+    setPrevSupaUserId(supaUserId ?? null);
+    const next = deriveInitial(supabaseReady, supaUserId);
+    setBalance(next.balance);
+    setStatus(next.status);
+    setError(null);
+  }
 
   const refreshRef = useRef(/** @type {(() => Promise<void>) | null} */ (null));
 
   useEffect(() => {
-    if (!supabaseReady) {
-      setBalance(null);
-      setStatus('disabled');
-      return undefined;
-    }
-    if (!supaUserId) {
-      setBalance(null);
-      setStatus('unauthenticated');
-      return undefined;
-    }
+    if (!supabaseReady || !supaUserId) return undefined;
 
     let alive = true;
-    setStatus('loading');
-    setError(null);
 
     const fetchOnce = async () => {
       try {
@@ -93,7 +116,6 @@ export function useUserBalance(supaUserId) {
         setStatus('ready');
         setError(null);
       } else {
-        // Fallback: si no podemos parsear, refetch directo.
         void fetchOnce();
       }
     });

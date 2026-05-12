@@ -35,6 +35,12 @@ import {
 } from './utils/sound';
 import { DEFAULT_CHASFLIP_AVATAR_URL, normalizeStoredAvatar } from './data/chasflipAvatars.js';
 import { useWalletPanel } from './lib/useWalletPanel.js';
+import { useUserBalance } from './lib/useUserBalance.js';
+import {
+  freshIdempotencyKey,
+  recordDepositDemo,
+  recordWithdrawDemo,
+} from './services/supabaseLedger.js';
 
 const SESSION_KEY = 'chasflip:session:v1';
 
@@ -63,7 +69,9 @@ function App() {
   const { t, i18n } = useTranslation();
   const numLocale = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
   const [usuario, setUsuario] = useState(() => readSession());
-  const [saldo, setSaldo] = useState(0);
+  // Saldo legacy local (fallback cuando Supabase no está configurado o
+  // todavía no terminó el bootstrap). Fuente de verdad solo si NO hay ledger.
+  const [localSaldo, setLocalSaldo] = useState(0);
   const [fase, setFase] = useState('idle');
   const [resultado, setResultado] = useState(null);
   const [ultimaGanancia, setUltimaGanancia] = useState(null);
@@ -107,6 +115,27 @@ function App() {
 
   /** auth.uid() activo en el cliente Supabase tras bootstrap anónimo. */
   const [supaUserId, setSupaUserId] = useState(/** @type {string | null} */ (null));
+
+  // -------------------- LEDGER AUTORITATIVO (Fase 2.B.2) --------------------
+  // `useUserBalance` lee `public.transactions.balance_after` y se suscribe a
+  // Realtime para nuevos asientos. Cuando `status === 'ready'` el balance del
+  // servidor es la fuente de verdad y el `localSaldo` no se usa para nada.
+  const ledger = useUserBalance(supaUserId);
+  const useLedger = ledger.status === 'ready';
+  const saldo = useLedger ? Number(ledger.balance ?? 0) : localSaldo;
+
+  /**
+   * Helper para mutar el saldo SOLO en el path legacy. Si el ledger está
+   * activo, ignoramos la mutación: el servidor ya cobró/acreditó y Realtime
+   * traerá el nuevo `balance_after` en milisegundos.
+   * @param {(prev: number) => number} fn
+   */
+  const mutateLocalSaldo = useCallback(
+    (fn) => {
+      if (!useLedger) setLocalSaldo(fn);
+    },
+    [useLedger],
+  );
 
   const unsubMatchesRef = useRef(/** @type {null | (() => void)} */ (null));
   const matchRowUnsubRef = useRef(/** @type {null | (() => void)} */ (null));
@@ -261,7 +290,7 @@ function App() {
       paisCode,
       paisNombre: pais?.name || paisCode,
     });
-    setSaldo(0);
+    setLocalSaldo(0);
   };
 
   /** Demo local después de timeouts de UX (sin servidor). */
@@ -298,7 +327,7 @@ function App() {
         setResultado(won ? 'gano' : 'perdio');
         setFase('resultado');
         if (won && payout > 0) {
-          setSaldo((prev) => prev + payout);
+          mutateLocalSaldo((prev) => prev + payout);
           setUltimaGanancia(payout);
           playWinSound({ monto, volume: 0.9 });
           setPnlSession((p) => ({
@@ -373,7 +402,7 @@ function App() {
         setFase('resultado');
 
         if (won && Number.isFinite(payoutRaw) && payoutRaw > 0) {
-          setSaldo((prev) => prev + payoutRaw);
+          mutateLocalSaldo((prev) => prev + payoutRaw);
           setUltimaGanancia(payoutRaw);
           playWinSound({ monto: stakeAmount, volume: 0.9 });
           setPnlSession((p) => ({
@@ -393,7 +422,10 @@ function App() {
         window.clearInterval(tickSpin);
 
         window.clearTimeout(sheetTimer);
-        setSaldo((prev) => prev + stakeAmount);
+        // En modo ledger, la apuesta ya está cobrada en el servidor; el server
+        // puede resolver el match igual y el `win` llegará via Realtime. NO
+        // devolvemos saldo localmente. En modo legacy sí restituimos.
+        mutateLocalSaldo((prev) => prev + stakeAmount);
         setAppleHud({
           title: 'Resolución no disponible',
           message:
@@ -420,7 +452,9 @@ function App() {
           userIdLocal = ctx.userId;
         } catch (rawErr) {
           searchTicksStop?.();
-          setSaldo((prev) => prev + monto);
+          // En modo ledger nada se cobró si auth falló (no llegamos al bet).
+          // En modo legacy devolvemos lo que descontamos optimistamente.
+          mutateLocalSaldo((prev) => prev + monto);
 
           clearMatchmakingListeners();
           setMatchSheet({ open: false, phase: 'searching', stake: monto, commission: null });
@@ -464,8 +498,12 @@ function App() {
         let joinParsed = /** @type {Record<string, unknown>} */ ({});
 
         try {
+          // Idempotency_key del asiento `bet` que crea `matchmaking_join` en
+          // ledger autoritativo. Si el cliente reintenta esta misma RPC tras
+          // un fallo de red, el server reconoce la clave y no duplica.
+          const betIdem = freshIdempotencyKey();
           /** @type {unknown} */
-          const joinPayload = await joinMatchmaking(monto);
+          const joinPayload = await joinMatchmaking(monto, { idempotencyKey: betIdem });
           joinParsed =
             typeof joinPayload === 'object' && joinPayload !== null ? /** @type {Record<string, unknown>} */ (
               joinPayload
@@ -556,7 +594,10 @@ function App() {
               }
 
               clearMatchmakingListeners();
-              setSaldo((prev) => prev + monto);
+              // En modo ledger, `cancel_matchmaking` ya hizo refund server-side
+              // (apartado D de la migración 20260512120000_ledger_cutover.sql);
+              // Realtime traerá el balance actualizado. En legacy sí devolvemos.
+              mutateLocalSaldo((prev) => prev + monto);
               setMatchSheet({
                 open: false,
                 phase: 'queued',
@@ -583,7 +624,11 @@ function App() {
           }
           const code = safeSupabaseErrorCode(e);
 
-          setSaldo((prev) => prev + monto);
+          // Si fue `insufficient_funds` en ledger, el server no debitó nada
+          // (toda la RPC es transaccional). Si fue otro error pre-bet o legacy,
+          // este `mutateLocalSaldo` actúa como restituidor en modo legacy y es
+          // no-op en modo ledger.
+          mutateLocalSaldo((prev) => prev + monto);
           setMatchSheet({
             open: false,
             phase: 'searching',
@@ -654,7 +699,9 @@ function App() {
 
     setRivalRemote(null);
     setLiveMatchRow(null);
-    setSaldo((prev) => prev - monto);
+    // En modo ledger NO descontamos local: el `bet` server-side ya lo hará
+    // dentro de `matchmaking_join`. Realtime mostrará el balance actualizado.
+    mutateLocalSaldo((prev) => prev - monto);
 
     if (SUPABASE_MATCH_READY && usuario) {
       const tickSearch = window.setInterval(() => playFlipTick({ volume: 0.13 }), 210);
@@ -678,12 +725,35 @@ function App() {
   const handleDepositar = (monto) => {
     if (retiroBusyRef.current) return;
     retiroBusyRef.current = true;
+    prewarmAudio();
+    playDepositSound();
+
+    // Modo ledger: depositamos contra `public.transactions` con una idem nueva.
+    if (useLedger) {
+      void (async () => {
+        try {
+          await recordDepositDemo({
+            amount: monto,
+            idempotencyKey: freshIdempotencyKey(),
+            meta: { from: 'modal_demo' },
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn('[chasflip] deposit ledger error', err);
+          const code = safeSupabaseErrorCode(err);
+          setAppleHud({
+            title: t('hud.err_title'),
+            message: t(`hud.err.${code}`, t('hud.err.unknown')),
+          });
+        } finally {
+          retiroBusyRef.current = false;
+        }
+      })();
+      return;
+    }
+
     try {
-      prewarmAudio();
-      playDepositSound();
-      setSaldo((prev) => prev + monto);
+      setLocalSaldo((prev) => prev + monto);
     } finally {
-      // Liberación inmediata: el depósito es local y síncrono.
       retiroBusyRef.current = false;
     }
   };
@@ -691,17 +761,46 @@ function App() {
   const handleRetirar = (monto) => {
     if (retiroBusyRef.current) return;
     retiroBusyRef.current = true;
+
+    if (monto > saldo) {
+      setAppleHud({
+        title: t('hud.withdraw_too_much_title'),
+        message: t('hud.withdraw_too_much_msg'),
+      });
+      retiroBusyRef.current = false;
+      return;
+    }
+
+    if (useLedger) {
+      void (async () => {
+        try {
+          await recordWithdrawDemo({
+            amount: monto,
+            idempotencyKey: freshIdempotencyKey(),
+            meta: { from: 'modal_demo' },
+          });
+          setAppleHud({
+            title: t('hud.withdraw_done_title'),
+            message: t('hud.withdraw_done_msg', {
+              amount: monto.toLocaleString(numLocale, { maximumFractionDigits: 2 }),
+            }),
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn('[chasflip] withdraw ledger error', err);
+          const code = safeSupabaseErrorCode(err);
+          setAppleHud({
+            title: t('hud.err_title'),
+            message: t(`hud.err.${code}`, t('hud.err.unknown')),
+          });
+        } finally {
+          retiroBusyRef.current = false;
+        }
+      })();
+      return;
+    }
+
     try {
-      if (monto > saldo) {
-        setAppleHud({
-          title: t('hud.withdraw_too_much_title'),
-          message: t('hud.withdraw_too_much_msg'),
-        });
-        return;
-      }
-
-      setSaldo((prev) => prev - monto);
-
+      setLocalSaldo((prev) => prev - monto);
       setAppleHud({
         title: t('hud.withdraw_done_title'),
         message: t('hud.withdraw_done_msg', {
@@ -762,7 +861,9 @@ function App() {
       }
 
       clearMatchmakingListeners();
-      setSaldo((prev) => prev + matchSheet.stake);
+      // En modo ledger el refund lo hizo `cancel_matchmaking` server-side.
+      // En modo legacy restauramos el descuento local.
+      mutateLocalSaldo((prev) => prev + matchSheet.stake);
       setMatchSheet((s) => ({ ...s, open: false }));
       setFase('idle');
       setAppleHud({

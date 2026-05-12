@@ -174,6 +174,13 @@
       "profile_upsert_failed": "Non siamo riusciti a salvare il tuo profilo.",
       "anon_disabled": "L'accesso anonimo è disattivato in Supabase.",
       "network": "Problema di rete. Controlla la connessione e riprova.",
+      "insufficient_funds": "Saldo insufficiente per questa giocata.",
+      "invalid_amount": "Questo importo non è valido.",
+      "amount_too_small": "L'importo è inferiore al minimo consentito.",
+      "amount_too_large": "L'importo supera il massimo consentito.",
+      "invalid_kind": "Interno: tipo di transazione non valido.",
+      "invalid_reason": "Interno: motivo del bonus non valido.",
+      "idempotency_required": "Interno: chiave di idempotenza mancante.",
       "unknown": "Qualcosa è andato storto. Riprova."
     }
   }

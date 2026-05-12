@@ -88,14 +88,28 @@ export async function ensureSupabaseSessionAndProfile(usuario) {
  *
  * Respuesta ejemplo: `{ matched, match_id, commission_decimal, opponent?, stake_amount?, queue_id? }`
  *
+ * Fase 2.B.2 — acepta opcionalmente `idempotencyKey` (UUID generado por el
+ * cliente con `freshIdempotencyKey()`). Si se pasa, el servidor debita un
+ * asiento `bet` al ledger antes de tocar match_queue / matches. Si NO se pasa,
+ * comportamiento legacy (no toca ledger).
+ *
  * @param {number} stakeAmount
+ * @param {object} [opts]
+ * @param {string} [opts.idempotencyKey]
  */
-export async function joinMatchmaking(stakeAmount) {
+export async function joinMatchmaking(stakeAmount, opts) {
+  const idem = opts?.idempotencyKey ?? null;
   return invokeOrRpc(
     'matchmaking',
-    { stake_amount: Math.trunc(stakeAmount) },
+    {
+      stake_amount: Math.trunc(stakeAmount),
+      ...(idem ? { idempotency_key: idem } : {}),
+    },
     'matchmaking_join',
-    { p_stake_amount: Math.trunc(stakeAmount) },
+    {
+      p_stake_amount: Math.trunc(stakeAmount),
+      p_idempotency_key: idem,
+    },
   );
 }
 
