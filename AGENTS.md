@@ -34,7 +34,8 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
 
 **No usar** (intencionalmente):
 - TypeScript estricto — el repo usa JS + JSDoc.
-- Wagmi/Privy/RainbowKit — comentados en código pero NO instalados.
+- ~~Wagmi/Privy/RainbowKit — comentados en código pero NO instalados.~~ → Wagmi
+  + RainbowKit YA instalados (Fase 2.A). Privy sigue NO instalado.
 - Edge Functions de Supabase — el cliente llama RPC directo.
 
 ---
@@ -58,13 +59,22 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
    localStorage `chasflip:freePlayClaimed`.
 4. **Live chat con badges PnL en tiempo real** (Supabase Realtime).
 5. **Matchmaking PvP real** vía RPC `matchmaking_join` + `resolve_match_round`.
+6. **Wallet connect REAL — Fase 2.A** (`feat/wallet-connect` mergeado):
+   `wagmi@2` + `viem@2` + `@rainbow-me/rainbowkit@2` + `@tanstack/react-query@5`
+   sobre **Polygon mainnet**. Soporta MetaMask, Coinbase Wallet, Rabby y
+   WalletConnect. Muestra address truncada + balance USDT (token
+   `0xc2132D05D31c914a87C6611C10748AEb04B58e8F`, 6 decimales) en el botón del
+   header. Detecta red incorrecta y la marca en rojo. Hook
+   `src/lib/useWalletPanel.js`, config en `src/lib/wagmiConfig.js`. **El saldo
+   del juego sigue siendo DEMO local — la wallet conectada todavía NO mueve
+   dinero (eso llega en Fase 2.C).**
 
 ### 🟡 Decorativo / placeholder hoy
-- **Botón "Connect wallet"** en header: hace toggle visual + HUD educativo
-  ("Wallet on-chain · próximamente"). NO se conecta a ninguna wallet real.
 - **`VITE_FLIP_ENGINE=mock`**: el resultado del flip lo decide `random()` de
   Postgres en `resolve_match_round`. NO hay VRF criptográfico todavía.
 - **Saldo USDT del header**: solo número en localStorage, sin ledger en server.
+- **Balance USDT on-chain** que se muestra en el botón de wallet: solo lectura.
+  Ni se suma al saldo demo ni habilita depósitos reales.
 
 ### 🔴 Lo que NO existe todavía (FASE 2+)
 - Tabla `transactions` / ledger autoritativo en Supabase
@@ -126,6 +136,12 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
   - `VITE_USE_SUPABASE_MATCHMAKING=true`
+  - `VITE_WALLETCONNECT_PROJECT_ID` (gratis en <https://cloud.reown.com>) — sin
+    él, solo conectan wallets inyectadas (MetaMask/Coinbase/Rabby). Móviles vía
+    WalletConnect fallan.
+- Variables opcionales:
+  - `VITE_RPC_URL_POLYGON` — RPC dedicado (Alchemy/Infura/QuickNode). Si no se
+    define, wagmi usa el RPC público de Polygon (rate-limited, ok para dev).
 
 ---
 
@@ -147,6 +163,11 @@ se lleva `2·S·(1-fee)` y la casa cobra `2·S·fee` en comisión.
 ### Configuración
 - `src/lib/supabaseClient.js` — singleton del cliente Supabase.
 - `src/lib/supabaseError.js` — `safeSupabaseErrorCode()` para sanitizar errores.
+- `src/lib/wagmiConfig.js` — config wagmi/RainbowKit, USDT Polygon address y
+  ABI mínimo `balanceOf`, helper `truncateAddress()`.
+- `src/lib/useWalletPanel.js` — hook que expone `address`, `chainId`,
+  `isConnected`, `isOnSupportedChain`, `usdtBalanceFormatted` +
+  `openConnectModal`/`openAccountModal`/`disconnect`.
 - `src/services/supabaseMatchmaking.js` — RPC wrappers + ensureSession.
 - `src/config/supabaseEnv.js`, `src/config/appEnv.js`, `src/config/chains.js`.
 - `src/i18n/index.js` — init de i18next.
@@ -208,27 +229,37 @@ Para cada tarea:
 
 ## 7) Roadmap sugerido (para alinear conversaciones futuras)
 
-### Próximo paso natural (FASE 2)
-Cuando el usuario decida cómo recibir dinero real, atacar:
+### Decisión arquitectónica vigente (mayo 2026)
+- **Provider de wallet**: RainbowKit (MetaMask + Coinbase + Rabby + WC). ✅
+- **Red blockchain**: Polygon mainnet. ✅
+- **Stablecoin**: USDT (6 decimales) en `0xc2132D05D31c914a87C6611C10748AEb04B58e8F`.
+- **Fase 2.A — Wallet connect real**: ✅ COMPLETADA.
+- **Fase 2.B — Ledger autoritativo en Supabase**: pendiente. Tabla
+  `transactions` (deposit/withdraw/bet/win/fee) con `idempotency_key UUID UNIQUE`.
+  Mover saldo de `localStorage` a server-side.
+- **Fase 2.C — Dinero real on-chain**: pendiente. Contrato escrow `.sol`
+  (referencia: `src/game/escrowPvP.js`) desplegado en Polygon + Chainlink VRF.
+  El cliente firma `approve()` + `deposit()` con la wallet conectada; el server
+  lee eventos del contrato y acredita al ledger.
 
-**Si elige cripto on-chain** (Privy/RainbowKit + contrato escrow):
-1. Instalar `wagmi`, `viem`, `@privy-io/react-auth` (o RainbowKit).
-2. Reemplazar `handleConnectWallet` en `App.jsx` con el provider real.
-3. Escribir contrato escrow `.sol` (referencia: `src/game/escrowPvP.js`).
-4. Integrar Chainlink VRF para randomness.
-5. Reemplazar `resolve_match_round` por lectura del contrato on-chain.
+### Próximos pasos sugeridos (FASE 2.B)
+1. Crear tabla `transactions` en Supabase con RLS estricto (insert solo desde
+   RPC, select solo del propio `user_id`).
+2. RPC `record_deposit(amount, source, idempotency_key)` y `record_withdraw`.
+3. Modificar `start_match` / `resolve_match_round` para que escriban al ledger
+   en vez de devolver el delta al cliente.
+4. Endpoint de "saldo" derivado del ledger (no de localStorage).
+5. Migrar el banner "Probar gratis" a un asiento `bonus` del ledger.
 
-**Si elige fiat (Stripe/MercadoPago)**:
-1. Crear tabla `transactions` (ledger autoritativo) en Supabase.
-2. Cambiar saldo de localStorage a server-side.
-3. Idempotencia con UUID por intent.
-4. Stripe Checkout o MP → webhook a Edge Function de Supabase.
-5. KYC/AML preparado (mínimo: edad, país, monto).
-
-**Camino prudente intermedio (recomendado en chats previos):**
-- Empezar por **Ruta D**: tabla `transactions` + ledger en Supabase, sin
-  conectar provider real todavía. Eso "blinda el cimiento" para que cualquier
-  provider futuro enchufe sin reescribir.
+### Fase 2.C (después de 2.B)
+1. Escribir contrato escrow `.sol` con función `lockMatch(matchId, stake)`,
+   `resolveMatch(matchId, winnerAddress)` y `withdraw(amount)`.
+2. Integrar Chainlink VRF v2.5 en Polygon para randomness.
+3. Crear Edge Function en Supabase que escuche eventos `Deposit` / `Withdraw`
+   del contrato y los inserte en `transactions` con idempotency_key derivada
+   del `txHash`.
+4. UI: nuevo botón "Depositar on-chain" en el Modal que llama
+   `useWriteContract({ functionName: 'approve' })` + `deposit()`.
 
 ### Otras tareas pendientes
 - Backups programados de Supabase + alertas (cuando haya tráfico).
@@ -247,5 +278,6 @@ Cuando el usuario decida cómo recibir dinero real, atacar:
 
 ---
 
-*Última actualización: tras merge de `feat/free-play` (commit `1aa8f2f`).*
+*Última actualización: tras merge de `feat/wallet-connect` (Fase 2.A — wallet
+connect real con RainbowKit + Polygon + USDT decorativo).*
 *Si tocas algo importante, actualiza la sección "Estado de producción" arriba.*

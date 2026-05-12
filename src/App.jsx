@@ -34,6 +34,7 @@ import {
   prewarmAudio,
 } from './utils/sound';
 import { DEFAULT_CHASFLIP_AVATAR_URL, normalizeStoredAvatar } from './data/chasflipAvatars.js';
+import { useWalletPanel } from './lib/useWalletPanel.js';
 
 const SESSION_KEY = 'chasflip:session:v1';
 
@@ -68,9 +69,22 @@ function App() {
   const [ultimaGanancia, setUltimaGanancia] = useState(null);
   const [modal, setModal] = useState(null);
   const [verificationMeta, setVerificationMeta] = useState(null);
-  // Estado de wallet on-chain — vive en App para que Arena pueda dispararlo
-  // desde el banner del Free Play; el Header solo lee/escribe lo mismo.
-  const [walletConectada, setWalletConectada] = useState(false);
+  // Wallet on-chain real (wagmi + RainbowKit, Fase 2.A). Sigue conviviendo con
+  // el saldo demo de `localStorage` — el dinero on-chain aún NO mueve el saldo
+  // del juego (eso llega en Fase 2.B con el ledger en Supabase).
+  const {
+    address: walletAddress,
+    isConnected: walletConectada,
+    isOnSupportedChain: walletIsOnSupportedChain,
+    usdtSymbol: walletUsdtSymbol,
+    usdtBalanceFormatted: walletUsdtBalance,
+    openConnectModal,
+    openAccountModal,
+    disconnect: disconnectWallet,
+  } = useWalletPanel();
+  // HUD informativo: la primera vez que se conecte una wallet en esta sesión,
+  // mostramos el "próximamente podrás depositar real" para no engañar al user.
+  const walletInfoShownRef = useRef(false);
   const [appleHud, setAppleHud] = useState(
     /** @type {{ title: string, message?: string } | null} */ (null),
   );
@@ -699,21 +713,45 @@ function App() {
     }
   };
 
-  // CTA de "Conectar wallet". Hoy es cosmético (el botón solo refleja un
-  // toggle visual). Cuando integremos Privy/wagmi/RainbowKit este handler
-  // dispara el modal real del provider. Por ahora marca conectado y muestra
-  // un HUD educativo para no engañar al usuario.
+  // CTA de "Conectar wallet". FASE 2.A — usa wagmi + RainbowKit:
+  //  - Si no hay wallet conectada: abre el modal de selección (MetaMask /
+  //    Coinbase / Rabby / WalletConnect).
+  //  - Si ya hay una: abre el panel de cuenta (cambiar / desconectar / ver
+  //    address). Como fallback (RainbowKit todavía no listo) desconecta.
+  // El saldo del juego sigue siendo DEMO local; este botón solo conecta la
+  // wallet "para verificar identidad on-chain". Dinero real llega en 2.C.
   const handleConnectWallet = () => {
     if (walletConectada) {
-      setWalletConectada(false);
+      if (typeof openAccountModal === 'function') {
+        openAccountModal();
+      } else {
+        try {
+          disconnectWallet();
+        } catch {
+          /* ignore */
+        }
+      }
       return;
     }
-    setWalletConectada(true);
-    setAppleHud({
-      title: t('hud.wallet_soon_title'),
-      message: t('hud.wallet_soon_msg'),
-    });
+    if (typeof openConnectModal === 'function') {
+      openConnectModal();
+    }
   };
+
+  // Avisar UNA vez por sesión cuando se conecte una wallet real, para que el
+  // user entienda que aún no se mueve dinero real.
+  useEffect(() => {
+    if (walletConectada && !walletInfoShownRef.current) {
+      walletInfoShownRef.current = true;
+      setAppleHud({
+        title: t('hud.wallet_connected_title'),
+        message: t('hud.wallet_connected_msg'),
+      });
+    }
+    if (!walletConectada) {
+      walletInfoShownRef.current = false;
+    }
+  }, [walletConectada, t]);
 
   const handleCancelQueuedMatch = () => {
     void (async () => {
@@ -783,6 +821,10 @@ function App() {
           usuario={usuario}
           saldo={saldo}
           walletConectada={walletConectada}
+          walletAddress={walletAddress}
+          walletUsdtBalance={walletUsdtBalance}
+          walletUsdtSymbol={walletUsdtSymbol}
+          walletIsOnSupportedChain={walletIsOnSupportedChain}
           onConectarWallet={handleConnectWallet}
           onDepositar={() => setModal('depositar')}
           onRetirar={() => setModal('retirar')}

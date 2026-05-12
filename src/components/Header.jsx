@@ -9,11 +9,16 @@ import {
   prewarmAudio,
   setSoundEnabled,
 } from '../utils/sound';
+import { truncateAddress } from '../lib/wagmiConfig.js';
 
 export default function Header({
   usuario,
   saldo,
   walletConectada = false,
+  walletAddress = null,
+  walletUsdtBalance = null,
+  walletUsdtSymbol = 'USDT',
+  walletIsOnSupportedChain = true,
   onConectarWallet,
   onDepositar,
   onRetirar,
@@ -72,11 +77,35 @@ export default function Header({
 
         <button
           type="button"
-          className={`btn-glass ${walletConectada ? 'is-active' : ''}`}
+          className={`btn-glass btn-glass--wallet ${walletConectada ? 'is-active' : ''} ${
+            walletConectada && !walletIsOnSupportedChain ? 'is-wrong-network' : ''
+          }`}
           onClick={onConectarWallet}
+          title={
+            walletConectada
+              ? walletIsOnSupportedChain
+                ? t('header.wallet_connected_title', { address: walletAddress || '' })
+                : t('header.wallet_wrong_network_title')
+              : t('header.wallet_connect_title')
+          }
         >
           <span className="btn-icon">🔗</span>
-          {walletConectada ? t('header.wallet_connected') : t('header.connect_wallet')}
+          {walletConectada ? (
+            <span className="btn-wallet-info">
+              <span className="btn-wallet-info__addr">
+                {walletIsOnSupportedChain
+                  ? truncateAddress(walletAddress)
+                  : t('header.wallet_wrong_network')}
+              </span>
+              {walletIsOnSupportedChain && walletUsdtBalance !== null && (
+                <span className="btn-wallet-info__balance">
+                  {walletUsdtBalance} {walletUsdtSymbol}
+                </span>
+              )}
+            </span>
+          ) : (
+            t('header.connect_wallet')
+          )}
         </button>
 
         <button
