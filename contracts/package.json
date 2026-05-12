@@ -1,0 +1,23 @@
+{
+  "name": "chasflip-contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ChasFlip on-chain contracts (Vault + Match VRF). Polygon Amoy testnet first.",
+  "type": "commonjs",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "clean": "hardhat clean",
+    "generate-wallets": "node scripts/generate_wallets.js",
+    "deploy:amoy:mock-usdt": "hardhat run --network amoy scripts/deploy_mock_usdt.js",
+    "deploy:amoy:vault": "hardhat run --network amoy scripts/deploy_vault.js",
+    "deploy:localhost:vault": "hardhat run --network localhost scripts/deploy_vault.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.5"
+  }
+}

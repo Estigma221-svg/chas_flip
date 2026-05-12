@@ -15,6 +15,7 @@
    7. `migrations/20260503020000_security_hardening.sql` — rate limits, anti-suplantación, `audit_log`.
    8. `migrations/20260512100000_transactions_ledger.sql` — ledger autoritativo (Fase 2.B.1).
    9. `migrations/20260512120000_ledger_cutover.sql` — cutover: `matchmaking_join` debita `bet`, `cancel_matchmaking` hace `refund`, `resolve_match_round` acredita `win` (Fase 2.B.2).
+   10. `migrations/20260513090000_onchain_vault.sql` — vault on-chain: `onchain_addresses`, `vault_deposits_seen`, `vault_withdraw_intents`, RPCs `link_onchain_address` / `record_vault_deposit` / `issue_withdraw_intent` / `mark_withdraw_completed` (Fase 2.C.1).
 
    Si Postgres se queja del trigger (`EXECUTE FUNCTION`), sustituye por `EXECUTE PROCEDURE set_profiles_updated_at();` según tu versión.
 
