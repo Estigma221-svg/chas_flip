@@ -30,6 +30,14 @@ const KNOWN_CODES = new Set([
   'profile_upsert_failed',
   'anon_disabled',
   'network',
+  // Fase 2.B — errores del ledger.
+  'insufficient_funds',
+  'invalid_amount',
+  'amount_too_small',
+  'amount_too_large',
+  'invalid_kind',
+  'invalid_reason',
+  'idempotency_required',
 ]);
 
 /** @param {unknown} err */
