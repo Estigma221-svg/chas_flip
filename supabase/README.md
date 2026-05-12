@@ -4,9 +4,16 @@
 
 1. Crear proyecto en [Supabase Dashboard](https://supabase.com/dashboard).
 2. **Authentication → Providers → Anonymous sign-ins**: activar.
-3. **SQL Editor**: pegar y ejecutar el contenido de `migrations/20260429120000_chasflip_matchmaking.sql`.
+3. **SQL Editor**: ejecutar las migraciones en orden cronológico (el timestamp del archivo es la fecha). La forma más rápida es pegar `BOOTSTRAP.sql` entero — es idempotente e incluye TODAS las migraciones hasta hoy. Si prefieres ir una por una:
 
-4. Ejecutar también `migrations/20260430104500_matches_payout_audit.sql` (columnas `payout_winner_numeric`, `protocol_fee_total` en `matches` + `resolve_match_round` actualizado).
+   1. `migrations/20260429120000_chasflip_matchmaking.sql` — tablas base + RPCs de matching.
+   2. `migrations/20260430104500_matches_payout_audit.sql` — columnas `payout_winner_numeric`, `protocol_fee_total`.
+   3. `migrations/20260501123000_commissions_v2.sql` — tiers de comisión.
+   4. `migrations/20260501142000_chat_messages.sql` — tabla `messages` + RLS.
+   5. `migrations/20260501150000_user_stats.sql` — agregados PnL.
+   6. `migrations/20260501161500_messages_v2_columns.sql` — badges PnL + país.
+   7. `migrations/20260503020000_security_hardening.sql` — rate limits, anti-suplantación, `audit_log`.
+   8. `migrations/20260512100000_transactions_ledger.sql` — ledger autoritativo (Fase 2.B.1).
 
    Si Postgres se queja del trigger (`EXECUTE FUNCTION`), sustituye por `EXECUTE PROCEDURE set_profiles_updated_at();` según tu versión.
 
@@ -15,7 +22,15 @@ Esto crea:
 - `profiles` — avatar, país, email de perfil demo, wallet (opcional en columna).
 - `match_queue` — espera FIFO por `stake_amount` con bloqueo `FOR UPDATE SKIP LOCKED`.
 - `matches` — monto (`stake_amount`), comisión servidor (`commission_decimal`), `winner_user_id`, liquidación opcional (`payout_winner_numeric`, `protocol_fee_total` tras la migración de auditoría), `meta` con snapshot del rival y **Realtime** habilitado.
-- Funciones: `commission_for_stake`, `matchmaking_join`, `cancel_matchmaking`, `resolve_match_round` (idempotente).
+- `messages` + `user_stats` — chat live y agregados PnL para badges.
+- `audit_log` — auditoría append-only de operaciones críticas.
+- `transactions` — **ledger autoritativo** (Fase 2.B.1): append-only con
+  `balance_after` snapshot e `idempotency_key UUID` único por usuario. RLS:
+  SELECT solo del propio user, INSERT bloqueado al cliente (solo SECURITY
+  DEFINER RPCs escriben).
+- Funciones: `commission_for_stake`, `matchmaking_join`, `cancel_matchmaking`,
+  `resolve_match_round` (idempotente), `write_audit`, y las RPCs del ledger:
+  `record_deposit_demo`, `record_withdraw_demo`, `record_bonus`, `get_user_balance`.
 
 ## 2. Edge Functions (opcional pero recomendado)
 
